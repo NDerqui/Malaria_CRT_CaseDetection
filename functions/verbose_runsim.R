@@ -67,7 +67,7 @@ run_verbose_sim <- function(simparams, sim_length,
     simparams[["bednet_dn0"]][index_key_intervention] <- bed_dn0
     simparams[["bednet_rn"]][index_key_intervention] <- bed_rn
     simparams[["bednet_rnm"]][index_key_intervention] <- bed_rnm
-    simparams[["bednet_gamman"]][index_key_intervention] <- bed_gamman
+    simparams[["bednet_gamman"]][index_key_intervention] <- bed_gamman * year
 
     }
   
