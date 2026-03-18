@@ -1,0 +1,14 @@
+### R files
+
+*.Rproj
+.Rproj.user/
+.Rhistory
+
+#### JW verbose file
+
+*.csv
+
+#### Plots folder
+
+outputs_plots/*
+outputs_plots_by_cluster/*
