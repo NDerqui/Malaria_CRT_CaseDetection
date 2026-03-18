@@ -338,3 +338,33 @@ clinical_cases_bednet %>%
             min = min(total_clin_year), max = max(total_clin_year),
             mean = mean(total_clin_year), sd = sd(total_clin_year),
             median = median(total_clin_year))
+
+
+#### time to infection ####
+
+clinical_cases_control %>%
+  # Only interested in time to first clinical infection,
+  # so filter to that timepoint for each individual
+  filter(new_D | new_T) %>%
+  arrange(individual_index, timestep) %>%
+  group_by(individual_index) %>%
+  filter(row_number() == 1) %>%
+  ungroup() %>%
+  # Calculate time to infection
+  mutate(time_to_infection = timestep - key_intervention_time[1]) %>%
+  summarise(min = min(time_to_infection), max = max(time_to_infection),
+            mean = mean(time_to_infection), sd = sd(time_to_infection),
+            median = median(time_to_infection))
+clinical_cases_bednet %>%
+  # Only interested in time to first clinical infection,
+  # so filter to that timepoint for each individual
+  filter(new_D | new_T) %>%
+  arrange(individual_index, timestep) %>%
+  group_by(individual_index) %>%
+  filter(row_number() == 1) %>%
+  ungroup() %>%
+  # Calculate time to infection
+  mutate(time_to_infection = timestep - key_intervention_time[1]) %>%
+  summarise(min = min(time_to_infection), max = max(time_to_infection),
+            mean = mean(time_to_infection), sd = sd(time_to_infection),
+            median = median(time_to_infection))
