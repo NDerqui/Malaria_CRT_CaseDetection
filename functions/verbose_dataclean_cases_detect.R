@@ -5,7 +5,7 @@
 # DESCRIPTION:
 
 # The functions detect new infections and new clinical infections (cases),
-# but there is also a function to signal all infected states
+# but there is also a function to signal all infected states or clinical states
 # (to be used with a cross sectional survey sim).
 
 
@@ -73,7 +73,7 @@ detect_new_clinical <- function(df) {
 }
 
 
-## For signalling all infections, no matter the start,
+## For signalling all infections or cases, no matter the start,
 ## just flag Us, As, Ds and Ts.
 
 detect_all_infection <- function(df) {
@@ -83,6 +83,18 @@ detect_all_infection <- function(df) {
   agecohort_inc <- df %>%
     # Flag all infection states
     mutate(infection = state %in% c("U", "A", "D", "Tr"))
+  
+  return(agecohort_inc)
+  
+}
+
+detect_all_clinical <- function(df) {
+  
+  require(dplyr)
+  
+  agecohort_inc <- df %>%
+    # Flag all infection states
+    mutate(case = state %in% c("D", "Tr"))
   
   return(agecohort_inc)
   
