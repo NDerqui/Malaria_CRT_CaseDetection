@@ -57,7 +57,7 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
                                          human_population = human_population,
                                          seasonality = TRUE,
                                          treatment = TRUE,
-                                         bednets = FALSE)
+                                         bednets = TRUE)
 
 ## Run sim
 
@@ -73,7 +73,7 @@ run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
 
 run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
                 key_bednet = TRUE, key_intervention_time = key_intervention_time,
-                run_note = "bednet")
+                bed_coverage = 0.90, run_note = "bednet")
 
 ## Read the verbose files
 
@@ -103,16 +103,18 @@ gc()
 
 png(filename = "outputs_plots/agecohort_overtime_control.png",
     width = 8, height = 5, units = "in", res = 1200)
-plot_verbose(df = age_cohort_control, note = "Control",
-             sim_length = sim_length, human_population = human_population)
+plot_verbose_itn(df = age_cohort_control, note = "Control",
+                 sim_length = sim_length, human_population = human_population,
+                 bednetstimesteps = seq(0, sim_length, 3)*year)
 dev.off()
 
 # Plot the bednet
 
 png(filename = "outputs_plots/agecohort_overtime_bednet.png",
     width = 8, height = 5, units = "in", res = 1200)
-plot_verbose(df = age_cohort_bednet, note = "ITNs",
-             sim_length = sim_length, human_population = human_population) +
+plot_verbose_itn(df = age_cohort_bednet, note = "ITNs",
+                 sim_length = sim_length, human_population = human_population,
+                 bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time, color = "firebrick", linetype = "dashed")
 dev.off()
 
@@ -158,12 +160,12 @@ count_infections(infection_cases_control) %>% select(total_infection) %>%
   summarise(total = sum(total_infection),
             min = min(total_infection), max = max(total_infection),
             mean = mean(total_infection), sd = sd(total_infection),
-            median = median(total_infection))
+            median = median(total_infection)) %>% t()
 count_infections(infection_cases_bednet) %>% select(total_infection) %>%
   summarise(total = sum(total_infection),
             min = min(total_infection), max = max(total_infection), 
             mean = mean(total_infection), sd = sd(total_infection),
-            median = median(total_infection))
+            median = median(total_infection)) %>% t()
 
 # By age
 count_infection_by_age(infection_cases_control) %>%
@@ -186,12 +188,12 @@ count_clinical(clinical_cases_control) %>% select(total_clinical) %>%
   summarise(total = sum(total_clinical),
             min = min(total_clinical), max = max(total_clinical),
             mean = mean(total_clinical), sd = sd(total_clinical),
-            median = median(total_clinical))
+            median = median(total_clinical)) %>% t()
 count_clinical(clinical_cases_bednet) %>% select(total_clinical) %>%
   summarise(total = sum(total_clinical),
             min = min(total_clinical), max = max(total_clinical), 
             mean = mean(total_clinical), sd = sd(total_clinical),
-            median = median(total_clinical))
+            median = median(total_clinical))  %>% t()
 
 # By age
 count_clinical_by_age(clinical_cases_control) %>%
@@ -307,18 +309,14 @@ infection_cases_bednet %>%
 # All
 clinical_cases_control %>%
   cross_survey(survey_time = 25*year, period = 15) %>%
-  count_clinical() %>% select(total_clinical) %>%
-  summarise(total = sum(total_clinical),
-            min = min(total_clinical), max = max(total_clinical),
-            mean = mean(total_clinical), sd = sd(total_clinical),
-            median = median(total_clinical))
+  detect_all_clinical() %>%
+  group_by(individual_index) %>% filter(row_number() == 1) %>% ungroup() %>%
+  summarise(total = sum(case))
 clinical_cases_bednet %>%
   cross_survey(survey_time = 25*year, period = 15) %>%
-  count_clinical() %>% select(total_clinical) %>%
-  summarise(total = sum(total_clinical),
-            min = min(total_clinical), max = max(total_clinical), 
-            mean = mean(total_clinical), sd = sd(total_clinical),
-            median = median(total_clinical))
+  detect_all_clinical() %>%
+  group_by(individual_index) %>% filter(row_number() == 1) %>% ungroup() %>%
+  summarise(total = sum(case))
 
 # By age
 
@@ -354,7 +352,7 @@ clinical_cases_control %>%
   mutate(time_to_infection = timestep - key_intervention_time[1]) %>%
   summarise(min = min(time_to_infection), max = max(time_to_infection),
             mean = mean(time_to_infection), sd = sd(time_to_infection),
-            median = median(time_to_infection))
+            median = median(time_to_infection)) %>% t()
 clinical_cases_bednet %>%
   # Only interested in time to first clinical infection,
   # so filter to that timepoint for each individual
@@ -367,4 +365,4 @@ clinical_cases_bednet %>%
   mutate(time_to_infection = timestep - key_intervention_time[1]) %>%
   summarise(min = min(time_to_infection), max = max(time_to_infection),
             mean = mean(time_to_infection), sd = sd(time_to_infection),
-            median = median(time_to_infection))
+            median = median(time_to_infection)) %>% t()
