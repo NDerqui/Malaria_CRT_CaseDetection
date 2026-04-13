@@ -73,7 +73,7 @@ run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
 
 run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
                 key_bednet = TRUE, key_intervention_time = key_intervention_time,
-                bed_coverage = 0.90, run_note = "bednet")
+                bed_coverage = 0.95, run_note = "bednet")
 
 ## Read the verbose files
 
