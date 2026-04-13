@@ -160,12 +160,12 @@ count_infections(infection_cases_control) %>% select(total_infection) %>%
   summarise(total = sum(total_infection),
             min = min(total_infection), max = max(total_infection),
             mean = mean(total_infection), sd = sd(total_infection),
-            median = median(total_infection)) %>% t()
+            median = median(total_infection)) %>% t() %>% round(digits = 1)
 count_infections(infection_cases_bednet) %>% select(total_infection) %>%
   summarise(total = sum(total_infection),
             min = min(total_infection), max = max(total_infection), 
             mean = mean(total_infection), sd = sd(total_infection),
-            median = median(total_infection)) %>% t()
+            median = median(total_infection)) %>% t() %>% round(digits = 1)
 
 # By age
 count_infection_by_age(infection_cases_control) %>%
@@ -173,13 +173,13 @@ count_infection_by_age(infection_cases_control) %>%
   summarise(total = sum(total_infection_year),
             min = min(total_infection_year), max = max(total_infection_year),
             mean = mean(total_infection_year), sd = sd(total_infection_year),
-            median = median(total_infection_year))
+            median = median(total_infection_year)) %>% print(n = nrow(.))
 count_infection_by_age(infection_cases_bednet) %>%
   select(total_infection_year, age_year) %>% group_by(age_year) %>%
   summarise(total = sum(total_infection_year),
             min = min(total_infection_year), max = max(total_infection_year),
             mean = mean(total_infection_year), sd = sd(total_infection_year),
-            median = median(total_infection_year))
+            median = median(total_infection_year)) %>% print(n = nrow(.))
 
 # Clinical cases
 
@@ -188,12 +188,12 @@ count_clinical(clinical_cases_control) %>% select(total_clinical) %>%
   summarise(total = sum(total_clinical),
             min = min(total_clinical), max = max(total_clinical),
             mean = mean(total_clinical), sd = sd(total_clinical),
-            median = median(total_clinical)) %>% t()
+            median = median(total_clinical)) %>% t() %>% round(digits = 1)
 count_clinical(clinical_cases_bednet) %>% select(total_clinical) %>%
   summarise(total = sum(total_clinical),
             min = min(total_clinical), max = max(total_clinical), 
             mean = mean(total_clinical), sd = sd(total_clinical),
-            median = median(total_clinical))  %>% t()
+            median = median(total_clinical))  %>% t() %>% round(digits = 1)
 
 # By age
 count_clinical_by_age(clinical_cases_control) %>%
@@ -201,13 +201,13 @@ count_clinical_by_age(clinical_cases_control) %>%
   summarise(total = sum(total_clin_year),
             min = min(total_clin_year), max = max(total_clin_year),
             mean = mean(total_clin_year), sd = sd(total_clin_year),
-            median = median(total_clin_year))
+            median = median(total_clin_year)) %>% print(n = nrow(.))
 count_clinical_by_age(clinical_cases_bednet) %>%
   select(total_clin_year, age_year) %>% group_by(age_year) %>%
   summarise(total = sum(total_clin_year),
             min = min(total_clin_year), max = max(total_clin_year),
             mean = mean(total_clin_year), sd = sd(total_clin_year),
-            median = median(total_clin_year))
+            median = median(total_clin_year)) %>% print(n = nrow(.))
 
 ## Plot
 
@@ -352,7 +352,7 @@ clinical_cases_control %>%
   mutate(time_to_infection = timestep - key_intervention_time[1]) %>%
   summarise(min = min(time_to_infection), max = max(time_to_infection),
             mean = mean(time_to_infection), sd = sd(time_to_infection),
-            median = median(time_to_infection)) %>% t()
+            median = median(time_to_infection)) %>% t() %>% round(digits = 1)
 clinical_cases_bednet %>%
   # Only interested in time to first clinical infection,
   # so filter to that timepoint for each individual
@@ -365,4 +365,4 @@ clinical_cases_bednet %>%
   mutate(time_to_infection = timestep - key_intervention_time[1]) %>%
   summarise(min = min(time_to_infection), max = max(time_to_infection),
             mean = mean(time_to_infection), sd = sd(time_to_infection),
-            median = median(time_to_infection)) %>% t()
+            median = median(time_to_infection)) %>% t() %>% round(digits = 1)
