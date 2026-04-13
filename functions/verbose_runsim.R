@@ -63,7 +63,7 @@ run_verbose_sim <- function(simparams, sim_length,
     
     # And subscribe that parameter in that timepoint(s)
     simparams[["bednet_coverages"]][index_key_intervention] <- bed_coverage
-    simparams[["bednet_retention"]] <- bed_retention
+    simparams[["bednet_retention"]] <- bed_retention * year
     simparams[["bednet_dn0"]][index_key_intervention] <- bed_dn0
     simparams[["bednet_rn"]][index_key_intervention] <- bed_rn
     simparams[["bednet_rnm"]][index_key_intervention] <- bed_rnm
