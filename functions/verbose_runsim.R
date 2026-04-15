@@ -87,6 +87,8 @@ run_verbose_sim <- function(simparams, sim_length,
   simparams$nets_verbose <- TRUE
   simparams$pev_verbose <- FALSE
   simparams$states_verbose <- TRUE
+  simparams$snapshot_verbose <- FALSE
+  simparams$snaphshot_time <- 0
   simparams$start_time <- 0
   simparams$lower_age_bound <- 0
   simparams$upper_age_bound <- 80*year
@@ -101,6 +103,7 @@ run_verbose_sim <- function(simparams, sim_length,
   # Set the verbose file name 
   
   simparams$file_name <- paste0(folder, "/verbose_dumping_", run_note, ".csv")
+  simparams$snapshot_file_name <- paste0(folder, "/verbose_dumping_snapshot_", run_note, ".csv")
   
   
   ## Run simulation
