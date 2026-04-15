@@ -17,6 +17,9 @@ rm(list = ls())
 # remotes::install_github("mrc-ide/individual@dev")
 # remotes::install_github("JasonRWood/malariasimulation@verbose_simulations")
 library(individual)
+# library(devtools)
+# setwd("~/Code_base/malariasimulation/")
+# load_all(".")
 library(malariasimulation)
 
 library(tidyverse)
@@ -41,6 +44,8 @@ sim_length <- 25 # We need at least 20 years to have an entire population born
 
 
 ## Functions to set up parameters and run the verbose simulation
+
+setwd("~/Code_base/Malaria_CRT_CaseDetection/")
 
 source("functions/verbose_par_set.R")
 source("functions/verbose_runsim.R")
@@ -68,17 +73,23 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
 
 key_intervention_time <- c(21, 24)*year
 
-run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
+out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
                 key_bednet = FALSE, run_note = "control")
 
-run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
+df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
+df_control$process <- out$process_vector[df_control$process_index]
+df_control$state <- out$state_list[df_control$state_index]
+
+out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
                 key_bednet = TRUE, key_intervention_time = key_intervention_time,
                 bed_coverage = 0.95, run_note = "bednet")
 
+df_bednet <- read.csv("outputs_verbose_sims/verbose_dumping_bednet.csv")
+df_bednet$process <- out$process_vector[df_bednet$process_index]
+df_bednet$state <- out$state_list[df_bednet$state_index]
+
 ## Read the verbose files
 
-df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
-df_bednet <- read.csv("outputs_verbose_sims/verbose_dumping_bednet.csv")
 
 
 #### age-cohort ####
