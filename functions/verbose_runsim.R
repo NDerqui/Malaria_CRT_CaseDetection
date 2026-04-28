@@ -79,19 +79,19 @@ run_verbose_sim <- function(simparams, sim_length,
   
   simparams$progress_bar <- TRUE
   
-  simparams$infection_verbose <- TRUE
+  simparams$infection_verbose <- FALSE
   simparams$biting_verbose <- FALSE
   simparams$mortality_verbose <- TRUE
-  simparams$progression_verbose <- TRUE
+  simparams$progression_verbose <- FALSE
   simparams$spraying_verbose <- FALSE
-  simparams$nets_verbose <- TRUE
+  simparams$nets_verbose <- FALSE
   simparams$pev_verbose <- FALSE
   simparams$states_verbose <- TRUE
-  simparams$snapshot_verbose <- FALSE
-  simparams$snaphshot_time <- 0
+  simparams$snapshot_verbose <- TRUE
+  simparams$snapshot_times <- c(0, 10, 100)
   simparams$start_time <- 0
   simparams$lower_age_bound <- 0
-  simparams$upper_age_bound <- 80*year
+  simparams$upper_age_bound <- 100*year
   simparams$state_recording_freq <- 1
   
   # Set a directory to dump the verbose file
