@@ -36,7 +36,7 @@ month <- 30
 
 human_population <- 10000
 init_EIR <- 15
-sim_length <- 25 # We need at least 20 years to have an entire population born
+sim_length <- 10 
 
 
 
@@ -44,8 +44,6 @@ sim_length <- 25 # We need at least 20 years to have an entire population born
 
 
 ## Functions to set up parameters and run the verbose simulation
-
-setwd("~/Code_base/Malaria_CRT_CaseDetection/")
 
 source("functions/verbose_par_set.R")
 source("functions/verbose_runsim.R")
@@ -71,12 +69,14 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
 # and then introduce our bednet intervention.
 # For purpose of this model study, say we introduce an increased bednet coverage.
 
-key_intervention_time <- c(21, 24)*year
+key_intervention_time <- c(6, 9)*year
 
 out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
                 key_bednet = FALSE, run_note = "control")
 
 df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
+df_control_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_control.csv")
+
 df_control$process <- out$process_vector[df_control$process_index]
 df_control$state <- out$state_list[df_control$state_index]
 
