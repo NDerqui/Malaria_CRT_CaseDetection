@@ -12,7 +12,7 @@
 
 run_verbose_sim <- function(simparams, sim_length,
                             ## Note for verbose dump file
-                            run_note = "",
+                            run_note = "", snapshot_time,
                             ## Key intervention
                             # Here, only set so that key intervention is bednet
                             key_bednet, key_intervention_time = NA,
@@ -88,7 +88,7 @@ run_verbose_sim <- function(simparams, sim_length,
   simparams$pev_verbose <- FALSE
   simparams$states_verbose <- TRUE
   simparams$snapshot_verbose <- TRUE
-  simparams$snapshot_times <- 1 # Get age at start and work out for those born with timestep_born
+  simparams$snapshot_times <- snapshot_time
   simparams$start_time <- 0
   simparams$lower_age_bound <- 0
   simparams$upper_age_bound <- 1000*year
