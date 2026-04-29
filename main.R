@@ -81,7 +81,7 @@ df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
 df_control$process <- out$process_vector[df_control$process_index]
 df_control$state <- out$state_list[df_control$state_index]
 
-write.csv(df_control, "outputs_verbose_sims/verbose_dumping_control.csv")
+write.csv(df_control, "outputs_verbose_sims/verbose_dumping_control.csv", row.names = FALSE)
 
 # Intervention arm
 
@@ -94,7 +94,7 @@ df_bednet <- read.csv("outputs_verbose_sims/verbose_dumping_bednet.csv")
 df_bednet$process <- out$process_vector[df_bednet$process_index]
 df_bednet$state <- out$state_list[df_bednet$state_index]
 
-write.csv(df_bednet, "outputs_verbose_sims/verbose_dumping_bednet.csv")
+write.csv(df_bednet, "outputs_verbose_sims/verbose_dumping_bednet.csv", row.names = FALSE)
 
 ## Read the verbose files
 
