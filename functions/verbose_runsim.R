@@ -88,7 +88,7 @@ run_verbose_sim <- function(simparams, sim_length,
   simparams$pev_verbose <- FALSE
   simparams$states_verbose <- TRUE
   simparams$snapshot_verbose <- TRUE
-  simparams$snapshot_times <- sim_length*year
+  simparams$snapshot_times <- 1 # Get age at start and work out for those born with timestep_born
   simparams$start_time <- 0
   simparams$lower_age_bound <- 0
   simparams$upper_age_bound <- 1000*year
