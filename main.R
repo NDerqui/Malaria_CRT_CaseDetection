@@ -71,25 +71,42 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
 
 key_intervention_time <- c(6, 9)*year
 
+# Control arm
+
 out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
                 key_bednet = FALSE, run_note = "control")
 
 df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
-df_control_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_control.csv")
 
 df_control$process <- out$process_vector[df_control$process_index]
 df_control$state <- out$state_list[df_control$state_index]
 
+write.csv(df_control, "outputs_verbose_sims/verbose_dumping_control.csv")
+
+# Intervention arm
+
 out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
-                key_bednet = TRUE, key_intervention_time = key_intervention_time,
-                bed_coverage = 0.95, run_note = "bednet")
+                       key_bednet = TRUE, key_intervention_time = key_intervention_time,
+                       bed_coverage = 0.95, run_note = "bednet")
 
 df_bednet <- read.csv("outputs_verbose_sims/verbose_dumping_bednet.csv")
+
 df_bednet$process <- out$process_vector[df_bednet$process_index]
 df_bednet$state <- out$state_list[df_bednet$state_index]
 
+write.csv(df_bednet, "outputs_verbose_sims/verbose_dumping_bednet.csv")
+
 ## Read the verbose files
 
+rm(out)
+
+df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
+df_control_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_control.csv")
+
+df_bednet <- read.csv("outputs_verbose_sims/verbose_dumping_bednet.csv")
+df_bednet_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_bednet.csv")
+
+gc()
 
 
 #### age-cohort ####
