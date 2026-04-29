@@ -88,10 +88,10 @@ run_verbose_sim <- function(simparams, sim_length,
   simparams$pev_verbose <- FALSE
   simparams$states_verbose <- TRUE
   simparams$snapshot_verbose <- TRUE
-  simparams$snapshot_times <- c(0, 10, 100)
+  simparams$snapshot_times <- sim_length*year
   simparams$start_time <- 0
   simparams$lower_age_bound <- 0
-  simparams$upper_age_bound <- 100*year
+  simparams$upper_age_bound <- 1000*year
   simparams$state_recording_freq <- 1
   
   # Set a directory to dump the verbose file
