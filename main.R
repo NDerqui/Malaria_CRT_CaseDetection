@@ -70,11 +70,13 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
 # For purpose of this model study, say we introduce an increased bednet coverage.
 
 key_intervention_time <- c(6, 9)*year
+snapshot_time <- 9*year
 
 # Control arm
 
 out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
-                key_bednet = FALSE, run_note = "control")
+                       snapshot_time = snapshot_time,
+                       key_bednet = FALSE, run_note = "control")
 
 df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
 
@@ -86,6 +88,7 @@ write.csv(df_control, "outputs_verbose_sims/verbose_dumping_control.csv", row.na
 # Intervention arm
 
 out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
+                       snapshot_time = snapshot_time,
                        key_bednet = TRUE, key_intervention_time = key_intervention_time,
                        bed_coverage = 0.95, run_note = "bednet")
 
@@ -116,10 +119,12 @@ gc()
 source("functions/verbose_dataclean_agecohort.R")
 source("functions/verbose_plots_basic.R")
 
-# Filter individuals born,
+# Filter individuals born / with age from snapshot,
 # estimate their age at each timestep and final age (at death or sim end).
 
-age_cohort_control <- get_age_cohort(df_control)
+age_cohort_control <- get_age_cohort(df = df_control,
+                                     age_snapshot = df_control_age,
+                                     snapshot_time = snapshot_time)
 age_cohort_bednet <- get_age_cohort(df_bednet)
 
 # Clean space
