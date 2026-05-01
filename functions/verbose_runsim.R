@@ -11,7 +11,8 @@
 # Verbose parameters are set here, so modify in advance.
 
 run_verbose_sim <- function(simparams, sim_length,
-                            ## Note for verbose dump file
+                            ## Note for verbose dump file,
+                            # and timing for the age snapshot (time at which we get age for all alive)
                             run_note = "", snapshot_time,
                             ## Key intervention
                             # Here, only set so that key intervention is bednet
@@ -110,4 +111,6 @@ run_verbose_sim <- function(simparams, sim_length,
   
   output <- malariasimulation:::run_verbose_simulation(timesteps = sim_length*year,
                                                        parameters = simparams)
+  
+  return(output)
 }

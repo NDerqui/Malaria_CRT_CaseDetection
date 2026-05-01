@@ -21,7 +21,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               ## Treatment pars
                               # Using default SP-AQ as per JC m/s
                               treatment, treat_timesteps = 0, # Treatment introduced at start (and not remove)
-                              treat_coverage = 0.75,           # Treatment administered to 75%
+                              treat_coverage = 0.75,          # Treatment administered to 75%
                               ## Bednet pars (coverage, etc. default)
                               # By default in these sims, parameters constant over time
                               bednets,
