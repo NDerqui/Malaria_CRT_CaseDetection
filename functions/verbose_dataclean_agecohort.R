@@ -33,7 +33,7 @@ birth_death <- function(df) {
     # Get the timestep when death occurs and apply to that indv
     mutate(timestep_died = case_when(process == "died" ~ timestep,
                                      process != "died" ~ 0)) %>%
-    group_by(individual_index) %>% mutate(timestep_died = max(timestep_died)) %>% ungroup() %>%
+    group_by(individual_index) %>% mutate(timestep_died = max(timestep_died)) %>% ungroup()
   
   # Final, correct the timings of birth death for indv with no event
   
