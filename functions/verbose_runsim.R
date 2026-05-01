@@ -40,7 +40,7 @@ run_verbose_sim <- function(simparams, sim_length,
   if (key_bednet) {
   
     # These are our bednets distribution rounds as per baseline par
-    bednets_timesteps <- seq(0, sim_length, 3)*year
+    bednets_timesteps <- seq(0, sim_length, 3)
     
     # Add our key intervention timepoint
     # (if already there, no adding, if not, add)
@@ -50,7 +50,7 @@ run_verbose_sim <- function(simparams, sim_length,
     # The pars here should match those used in the baseline function
     simparams <- set_bednets(
       simparams,
-      timesteps = bednets_timesteps,
+      timesteps = bednets_timesteps * year,
       coverages = rep(0.5, times = length(bednets_timesteps)),
       retention = 5 * year, 
       dn0 = matrix(rep(0.352, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of death probabilities
@@ -109,7 +109,7 @@ run_verbose_sim <- function(simparams, sim_length,
   
   ## Run simulation
   
-  output <- malariasimulation:::run_verbose_simulation(timesteps = sim_length*year,
+  output <- malariasimulation:::run_verbose_simulation(timesteps = sim_length * year,
                                                        parameters = simparams)
   
   return(output)

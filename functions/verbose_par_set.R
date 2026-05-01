@@ -25,7 +25,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               ## Bednet pars (coverage, etc. default)
                               # By default in these sims, parameters constant over time
                               bednets,
-                              bednets_timesteps = seq(0, sim_length, 3)*year, # By default, bednet rounds every 3 years
+                              bednets_timesteps = seq(0, sim_length, 3), # By default, bednet rounds every 3 years
                               bed_coverage = 0.5,  # Each round is distributed to 50% of the population.
                               bed_retention = 5,   # Nets are kept on average 5 years
                               bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
@@ -70,7 +70,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
       # Initial coverage (before our first introduction of treatment) is default 0%,
       # then SP-AQ is introduced at coverage (which in this case is at time 0)
       set_clinical_treatment(drug = 1,
-                             timesteps = treat_timesteps,
+                             timesteps = treat_timesteps * year,
                              coverages = treat_coverage) %>% 
       set_equilibrium(init_EIR = init_EIR)
   }
@@ -81,7 +81,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
   
   simparams <- set_bednets(
     simparams,
-    timesteps = bednets_timesteps,
+    timesteps = bednets_timesteps * year,
     coverages = rep(bed_coverage, times = length(bednets_timesteps)),
     retention = bed_retention * year, 
     dn0 = matrix(rep(bed_dn0, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of death probabilities

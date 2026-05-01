@@ -34,7 +34,7 @@ month <- 30
 
 # Main model inputs
 
-human_population <- 10000
+human_population <- 1000
 init_EIR <- 15
 
 
@@ -56,16 +56,16 @@ source("functions/verbose_runsim.R")
 # Set some basics, like length of sim vs length of trial,
 # and when do our interventions start.
 
-# Example, run the sim for total 6 years, with 2 years "without intervention"
-# (i.e., start the trial on the second year of the sim),
-# and doing two rounds of intervention separated by 2 years.
+# Example, run the sim for total 9 years, with 3 years "without intervention"
+# (i.e., start the trial on the third year of the sim),
+# and doing two rounds of intervention separated by 3 years.
 
-sim_length <- 6
+sim_length <- 9
 
-trial_start <- 2
-trial_second_intervention <- 2
+trial_start <- 3
+trial_second_intervention <- 3
 
-key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)*year
+key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
 # Control when we get our age snapshot (best at start of trial, timestep = 1)
 
