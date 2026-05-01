@@ -34,7 +34,7 @@ month <- 30
 
 # Main model inputs
 
-human_population <- 1000
+human_population <- 10000
 init_EIR <- 15
 
 
@@ -127,24 +127,31 @@ df_bednet_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_bednet.
 gc()
 
 
-#### age-cohort ####
+#### analyses cohort ####
 
 ## Simple clean to subtract to the cohort we can follow with age.
 
 source("functions/verbose_dataclean_agecohort.R")
+source("functions/verbose_dataclean_trial_sample.R")
 source("functions/verbose_plots_basic.R")
 
 # Filter individuals born / with age from snapshot,
-# estimate their age at each timestep and final age (at death or sim end).
+# estimate their age at each timestep and final age (at death or sim end),
+# and sample (say 100).
 
-age_cohort_control <- get_age_cohort(df = df_control,
-                                     age_snapshot = df_control_age,
-                                     snapshot_time = snapshot_time)
-age_cohort_bednet <- get_age_cohort(df_bednet)
+analyses_cohort_control <- df_control %>%
+  birth_death() %>%
+  get_age_cohort(age_snapshot = df_control_age, snapshot_time = snapshot_time) %>%
+  trial_sample(alive_by = trial_start * year, trial_size = 100)
+
+analyses_cohort_bednet <- df_bednet %>%
+  birth_death() %>%
+  get_age_cohort(age_snapshot = df_bednet_age, snapshot_time = snapshot_time) %>%
+  trial_sample(alive_by = trial_start * year, trial_size = 100)
 
 # Clean space
 
-rm(df_control, df_bednet)
+rm(df_control, df_bednet, df_control_age, df_bednet_age)
 gc()
 
 # Plot the control (no bednet)
