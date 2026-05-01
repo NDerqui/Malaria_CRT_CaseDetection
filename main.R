@@ -173,7 +173,7 @@ plot_verbose_itn(df = analyses_cohort_bednet,
                  note = "ITNs", sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
-  geom_vline(xintercept = key_intervention_time, color = "firebrick", linetype = "dashed")
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed")
 dev.off()
 
 

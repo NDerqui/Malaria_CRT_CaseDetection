@@ -22,6 +22,10 @@ plot_verbose <- function(df, sim_length, human_population, trial_size, note) {
   malaria_sim_colors <- carto_pal(name = "Safe")[c(4, 11, 1, 10, 2)]
   malaria_sim_states <- c("S", "A", "U", "D", "Tr")
   
+  # Re-adjust indv index so that fills the space
+  
+  df$individual_index <- as.factor(df$individual_index)
+  
   ## Heatmap-like plot
   
   plot <- ggplot(df, aes(x = timestep, y = individual_index, fill = state)) +
@@ -32,7 +36,8 @@ plot_verbose <- function(df, sim_length, human_population, trial_size, note) {
                       values = malaria_sim_colors) +
     labs(x = "Year", y = NULL,
          title = paste0(human_population, " ppl, Sampled ", trial_size, " - ", sim_length, " years - ", note)) +
-    theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
+    theme_bw() + theme(legend.position = "bottom", legend.title = element_blank(),
+                       axis.text.y = element_text(size = rel(0.75)))
   
   return(plot)
   
@@ -51,6 +56,10 @@ plot_verbose_itn <- function(df, sim_length, human_population, trial_size, bedne
   malaria_sim_colors <- carto_pal(name = "Safe")[c(4, 11, 1, 10, 2)]
   malaria_sim_states <- c("S", "A", "U", "D", "Tr")
   
+  # Re-adjust indv index so that fills the space
+  
+  df$individual_index <- as.factor(df$individual_index)
+  
   ## Heatmap-like plot
 
   plot <- ggplot(df, aes(x = timestep, y = individual_index, fill = state)) +
@@ -62,7 +71,8 @@ plot_verbose_itn <- function(df, sim_length, human_population, trial_size, bedne
                       values = malaria_sim_colors) +
     labs(x = "Year", y = NULL,
          title = paste0(human_population, " ppl, Sampled ", trial_size, " - ", sim_length, " years - ", note)) +
-    theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
+    theme_bw() + theme(legend.position = "bottom", legend.title = element_blank(),
+                       axis.text.y = element_text(size = rel(0.75)))
   
   return(plot)
   
