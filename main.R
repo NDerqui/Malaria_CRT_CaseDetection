@@ -170,7 +170,7 @@ dev.off()
 png(filename = "outputs_plots/agecohort_overtime_bednet.png",
     width = 8, height = 5, units = "in", res = 1200)
 plot_verbose_itn(df = analyses_cohort_bednet,
-                 note = "ITNs", sim_length = sim_length,
+                 note = "Intervention", sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed")
