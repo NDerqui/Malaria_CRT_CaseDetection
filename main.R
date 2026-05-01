@@ -36,17 +36,40 @@ month <- 30
 
 human_population <- 10000
 init_EIR <- 15
-sim_length <- 10 
 
 
 
-# RUN SIM --------------------------------------------------------------------
+# SIMULATION -----------------------------------------------------------------
+
+
+#### run sim ####
 
 
 ## Functions to set up parameters and run the verbose simulation
 
 source("functions/verbose_par_set.R")
 source("functions/verbose_runsim.R")
+
+
+## Trial conditions
+
+# Set some basics, like length of sim vs length of trial,
+# and when do our interventions start.
+
+# Example, run the sim for total 6 years, with 2 years "without intervention"
+# (i.e., start the trial on the second year of the sim),
+# and doing two rounds of intervention separated by 2 years.
+
+sim_length <- 6
+
+trial_start <- 2
+trial_second_intervention <- 2
+
+key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)*year
+
+# Control when we get our age snapshot (best at start of trial, timestep = 1)
+
+snapshot_time <- 1
 
 
 ## Basic parameters
@@ -63,14 +86,6 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
                                          bednets = TRUE)
 
 ## Run sim
-
-# We want to run the sim for 20 years "without intervention"
-# (with baseline use of interventions, but without our intervention of interest),
-# and then introduce our bednet intervention.
-# For purpose of this model study, say we introduce an increased bednet coverage.
-
-key_intervention_time <- c(6, 9)*year
-snapshot_time <- 9*year
 
 # Control arm
 
