@@ -7,7 +7,7 @@
 # Functions to do some basic plots of verbose sims, to understand
 # what we can track (individual state over time).
 
-plot_verbose <- function(df, sim_length, human_population, note) {
+plot_verbose <- function(df, sim_length, human_population, trial_size, note) {
   
   month <- 30
   year <- 365
@@ -31,14 +31,14 @@ plot_verbose <- function(df, sim_length, human_population, note) {
     scale_fill_manual(breaks = malaria_sim_states,
                       values = malaria_sim_colors) +
     labs(x = "Year", y = NULL,
-         title = paste0(human_population, " ppl - ", sim_length, " years - ", note)) +
+         title = paste0(human_population, " ppl, Sampled ", trial_size, " - ", sim_length, " years - ", note)) +
     theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
   
   return(plot)
   
 }
 
-plot_verbose_itn <- function(df, sim_length, human_population, bednetstimesteps, note) {
+plot_verbose_itn <- function(df, sim_length, human_population, trial_size, bednetstimesteps, note) {
   
   month <- 30
   year <- 365
@@ -61,7 +61,7 @@ plot_verbose_itn <- function(df, sim_length, human_population, bednetstimesteps,
     scale_fill_manual(breaks = malaria_sim_states,
                       values = malaria_sim_colors) +
     labs(x = "Year", y = NULL,
-         title = paste0(human_population, " ppl - ", sim_length, " years - ", note)) +
+         title = paste0(human_population, " ppl, Sampled ", trial_size, " - ", sim_length, " years - ", note)) +
     theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
   
   return(plot)

@@ -159,8 +159,9 @@ gc()
 
 png(filename = "outputs_plots/agecohort_overtime_control.png",
     width = 8, height = 5, units = "in", res = 1200)
-plot_verbose_itn(df = age_cohort_control, note = "Control",
-                 sim_length = sim_length, human_population = human_population,
+plot_verbose_itn(df = analyses_cohort_control,
+                 note = "Control", sim_length = sim_length,
+                 human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year)
 dev.off()
 
@@ -168,8 +169,9 @@ dev.off()
 
 png(filename = "outputs_plots/agecohort_overtime_bednet.png",
     width = 8, height = 5, units = "in", res = 1200)
-plot_verbose_itn(df = age_cohort_bednet, note = "ITNs",
-                 sim_length = sim_length, human_population = human_population,
+plot_verbose_itn(df = analyses_cohort_bednet,
+                 note = "ITNs", sim_length = sim_length,
+                 human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time, color = "firebrick", linetype = "dashed")
 dev.off()
