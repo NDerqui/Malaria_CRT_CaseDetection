@@ -1,6 +1,6 @@
 
 # INPUT: a df result of a verbose simulation.
-# OUTPUT(S): df(s) with various vitals (birth/death and timing) and age.
+# OUTPUT(S): df(s) with various vitals: birth/death and timing; and age.
 
 
 # DESCRIPTION:
@@ -46,6 +46,8 @@ birth_death <- function(df) {
 
 
 # DESCRIPTION:
+
+# Depends on function above being run before!!
 
 # From the total output of a verbose sim,
 # function that gets age-cohort (sub-group for which we can know their age).
