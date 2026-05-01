@@ -21,19 +21,25 @@ get_age_cohort <- function(df, age_snapshot, snapshot_time) {
   # First, signal if individuals are born during the sim
   
   df <- df %>%
-    # Flag if individuals were born during the sim
+    # Flag if individuals were born / died during the sim
     group_by(individual_index) %>%
     mutate(ever_born = case_when("born" %in% process ~ 1,
                                  !("born" %in% process) ~ 0)) %>%
+    mutate(ever_died = case_when("died" %in% process ~ 1,
+                                 !("died" %in% process) ~ 0)) %>%
     ungroup()
   
-  # Second, check who we can have age for:
+  # Second, check and filter to individuals who we can have age for:
   # Individuals alive at age snapshot + those born after.
   
   those_born <- unique(df$individual_index[df$ever_born == 1])
+  those_died <- unique(df$individual_index[df$ever_died == 0])
   those_snapshot <- unique(age_snapshot$individual_index)
   
-  print(paste0("We can have age for ", round(length(unique(c(those_born, those_snapshot)))*100/length(unique(df$individual_index)), 2), "% of sim pop."))
+  age_cohort <- df %>%
+    filter(individual_index %in% unique(c(those_born, those_snapshot)))
+  
+  print(paste0("We can have age for ", round(nrow(age_cohort)*100/nrow(df), 2), "% of sim pop."))
   
   # Third, add the age of our snapshot to the main df
   
@@ -42,7 +48,7 @@ get_age_cohort <- function(df, age_snapshot, snapshot_time) {
     select(individual_index, age) %>%
     rename(age_at_snapshot = age)
   
-  age_cohort <- merge(df, age_snapshot, all = TRUE)
+  age_cohort <- merge(age_cohort, age_snapshot, all = TRUE)
   
   # Next move to calculate age:
   # To do this, get timestep at which individuals are born.
@@ -51,24 +57,19 @@ get_age_cohort <- function(df, age_snapshot, snapshot_time) {
   # calculate for those with snapshot considering how much they aged at time of snapshot.
   
   age_cohort <- age_cohort %>%
-    # For those not born, timestep born is -(age_at_snapshot - snapshot_timestep)
-    mutate(timestep_born = case_when(ever_born == 0 ~ -(age_at_snapshot - snapshot_time),
-                                     ever_born == 1  ~ NA)) %>%
     # For those born, get the timestep for that process
-    mutate(timestep_born = case_when(ever_born == 1 & process == "born" ~ timestep,
-                                     ever_born == 0 | process != "born" ~ timestep_born)) %>%
-    group_by(individual_index) %>% mutate(timestep_born = max(timestep_born, na.rm = TRUE)) %>% ungroup() %>%
-    # Remove
+    mutate(timestep_born = case_when(process == "born" ~ timestep,
+                                     process != "born" ~ 0)) %>%
+    group_by(individual_index) %>% mutate(timestep_born = max(timestep_born)) %>% ungroup() %>%
+    # For those not born, timestep born is -(age_at_snapshot - snapshot_timestep)
+    mutate(timestep_born = case_when(!is.na(age_at_snapshot) ~ -(age_at_snapshot - snapshot_time),
+                                     is.na(age_at_snapshot) ~ timestep_born)) %>%
+    # Clean
     select(-age_at_snapshot)
   
   # Now that we have timestep born, get age at each timestep and final
   
   age_cohort <- age_cohort %>%
-    # Flag if individuals were born during the sim
-    group_by(individual_index) %>%
-    mutate(ever_died = case_when("died" %in% process ~ 1,
-                                 !("died" %in% process) ~ 0)) %>%
-    ungroup() %>%
     # Because we want to stop aging after death, get timestep of death
     mutate(timestep_died = case_when(process == "died" ~ timestep,
                                      process != "died" ~ 0)) %>%
