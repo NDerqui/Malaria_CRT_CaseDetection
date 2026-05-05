@@ -132,7 +132,7 @@ gc()
 
 source("functions/verbose_dataclean_agecohort.R")
 source("functions/verbose_dataclean_trial_sample.R")
-source("functions/verbose_plots_basic.R")
+source("functions/verbose_vis.R")
 
 # Filter individuals born / with age from snapshot,
 # estimate their age at each timestep and final age (at death or sim end),
