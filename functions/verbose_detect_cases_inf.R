@@ -96,12 +96,9 @@ detect_all_infection <- function(df) {
   df <- df %>%
     # To ensure timings of transitions come okay...
     arrange(individual_index, timestep) %>%
-    # Everything by indv_index as we want to follow
-    group_by(individual_index, timestep) %>%
     # Flag all infection states
     mutate(infected_at_time = state %in% c("U", "A", "D", "Tr")) %>%
-    mutate(case_at_time = state %in% c("D", "Tr")) %>%
-    ungroup()
+    mutate(case_at_time = state %in% c("D", "Tr")) 
   
   return(df)
   
