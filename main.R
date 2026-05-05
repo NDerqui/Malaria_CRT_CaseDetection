@@ -181,6 +181,50 @@ dev.off()
 # ANALYSES ----------------------------------------------------------------
 
 
+source("functions/verbose_detect_cases_inf.R")
+
+
+infections_control <- analyses_cohort_control %>%
+  ever_malaria() %>% detect_all_infection() %>% detect_new_infection()
+
+
+infections_bednet <- analyses_cohort_bednet %>%
+  ever_malaria() %>% detect_all_infection() %>% detect_new_infection()
+
+timesteps <- unique(infections_control$timestep)
+df <- data.frame()
+
+for (time in 1:length(timesteps)) {
+  
+  add <- infections_control %>% filter(timestep == timesteps[time]) %>%
+    mutate(prevalence = sum(infected_at_time)/trial_size) %>%
+    mutate(incidence = sum(new_infection_at_time)/trial_size) %>%
+    select(timestep, prevalence, incidence)
+  
+  df <- rbind(df, add)
+  rm(add)
+}
+df1 <- df %>% mutate(run = "control")
+df <- data.frame()
+
+for (time in 1:length(timesteps)) {
+  
+  add <- infections_bednet %>% filter(timestep == timesteps[time]) %>%
+    mutate(prevalence = sum(infected_at_time)/trial_size) %>%
+    mutate(incidence = sum(new_infection_at_time)/trial_size) %>%
+    select(timestep, prevalence, incidence)
+  
+  df <- rbind(df, add)
+  rm(add)
+}
+df2 <- df %>% mutate(run = "intervention")
+
+ggplot() +
+  geom_line(data = df1, aes(x = timestep, y = prevalence, group = run, color = run)) +
+  geom_line(data = df2, aes(x = timestep, y = prevalence, group = run, color = run)) +
+  geom_line(data = df1, aes(x = timestep, y = incidence, group = run, color = run)) +
+  geom_line(data = df2, aes(x = timestep, y = incidence, group = run, color = run))
+
 #### true no infections / cases ####
 
 ## Signal all new infections and new clinical-infections.
