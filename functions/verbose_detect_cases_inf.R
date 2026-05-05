@@ -22,8 +22,8 @@ ever_malaria <- function(df) {
     arrange(individual_index, timestep) %>%
     # Everything by indv_index as we want to see overall status
     group_by(individual_index) %>%
-    mutate(ever_infected = state %in% c("U", "A", "D", "Tr")) %>%
-    mutate(ever_case = state %in% c("D", "Tr")) %>%
+    mutate(ever_infected = any(state %in% c("U", "A", "D", "Tr"))) %>%
+    mutate(ever_case = any(state %in% c("D", "Tr"))) %>%
     ungroup()
   
   return(df)
