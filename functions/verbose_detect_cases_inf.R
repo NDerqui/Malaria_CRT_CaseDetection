@@ -54,8 +54,9 @@ detect_new_infection <- function(df) {
     # First get the transition pairing process to state,
     # because some processes will be new infection or not depending on previous state.
     mutate(transition = paste0(process, " - ", state)) %>%
-    # Everything by indv_index as we want to follow
-    group_by(individual_index, timestep) %>%
+    # Everything by indv_index as we do not want timstep lag from other indv_index
+    # but not real need of timestep (as it will go row_wise)
+    group_by(individual_index) %>%
     # Detect appearances of a new infection as:
     # New D or T (by model definition, new Ds or Ts are new infections), or as
     # an accepted transition to A (see above)
@@ -70,8 +71,9 @@ detect_new_infection <- function(df) {
   df <- df %>%
     # To ensure timings of transitions come okay...
     arrange(individual_index, timestep) %>%
-    # Everything by indv_index as we want to follow
-    group_by(individual_index, timestep) %>%
+    # Everything by indv_index as we do not want timstep lag from other indv_index
+    # but not real need of timestep (as it will go row_wise)
+    group_by(individual_index) %>%
     # Detect new appearances of D/T using lag function (TRUE / FALSE)
     mutate(new_D = state == "D" & lag(state, default = first(state)) != "D") %>%
     mutate(new_T = state == "Tr" & lag(state, default = first(state)) != "Tr") %>%
