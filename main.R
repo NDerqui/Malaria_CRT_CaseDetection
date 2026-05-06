@@ -224,7 +224,7 @@ plot <- merge(plot, labels, all = TRUE)
 require(rcartocolor)
 
 png(filename = "outputs_plots/outcomes.png",
-    width = 8, height = 5, units = "in", res = 1200)
+    width = 10, height = 7, units = "in", res = 1200)
 ggplot(data = plot,
        aes(x = timestep, y = value, group = run, color = run)) +
   geom_point() + geom_line() +
@@ -237,3 +237,48 @@ ggplot(data = plot,
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_grid(label ~ ., scales = "free")
 dev.off()
+
+
+#### time-to-event ####
+
+event_time_control <- infections_control %>%
+  get_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Control")
+
+event_time_bednet <- infections_bednet %>%
+  get_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Intervention")
+
+# Quick vis
+
+library(survival)
+library(tidycmprsk)
+
+plot2 <- rbind(event_time_control, event_time_bednet)
+
+plot2a <-  survfit(Surv(time_to_infection, new_infection_at_time) ~ run, data = plot2)
+plot2b <-  survfit(Surv(time_to_case, new_case_at_time) ~ run, data = plot2)
+
+surv_fit_a <- tidy(plot2a)
+surv_fit_b <- tidy(plot2b)
+
+ggplot(data = surv_fit_a, aes(x = time, y = estimate, color = strata, fill = strata)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  labs(x = "Year", y = "Proportion without infection",
+       title = paste0(human_population, " ppl, Sampled ", trial_size)) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
+
+
+ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, fill = strata)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  labs(x = "Year", y = "Proportion without clinical case",
+       title = paste0(human_population, " ppl, Sampled ", trial_size)) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
