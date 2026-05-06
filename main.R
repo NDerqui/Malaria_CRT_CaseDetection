@@ -190,10 +190,10 @@ source("functions/verbose_detect_cases_inf.R")
 # Run for each
 
 infections_control <- analyses_cohort_control %>%
-  ever_malaria() %>% detect_all_infection() %>% detect_new_infection()
+  detect_infection()
 
 infections_bednet <- analyses_cohort_bednet %>%
-  ever_malaria() %>% detect_all_infection() %>% detect_new_infection()
+  detect_infection()
 
 
 #### incidence/prevalence ####
