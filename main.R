@@ -185,7 +185,7 @@ dev.off()
 
 ## Functions to signal infection/case, at time and overall
 
-source("functions/verbose_detect_cases_inf.R")
+source("functions/verbose_infection_state.R")
 
 # Run for each
 
