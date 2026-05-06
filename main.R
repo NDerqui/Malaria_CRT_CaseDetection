@@ -200,7 +200,7 @@ infections_bednet <- analyses_cohort_bednet %>%
 
 ## Functions to get incidence/prevalence at each timestep
 
-source("functions/verbose_estimates_prevalence_incidence.R")
+source("functions/verbose_prevalence_incidence.R")
 
 # Apply
 
