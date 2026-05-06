@@ -8,7 +8,7 @@
 # From the total output of a verbose sim,
 # function that signals which individuals have been born/died, and when.
 
-birth_death <- function(df) {
+get_birth_death <- function(df) {
   
   require(dplyr)
   

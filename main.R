@@ -139,12 +139,12 @@ source("functions/verbose_vis.R")
 # and sample (say 100).
 
 analyses_cohort_control <- df_control %>%
-  birth_death() %>%
+  get_birth_death() %>%
   get_age_cohort(age_snapshot = df_control_age, snapshot_time = snapshot_time) %>%
   trial_sample(alive_by = trial_start * year, trial_size = trial_size)
 
 analyses_cohort_bednet <- df_bednet %>%
-  birth_death() %>%
+  get_birth_death() %>%
   get_age_cohort(age_snapshot = df_bednet_age, snapshot_time = snapshot_time) %>%
   trial_sample(alive_by = trial_start * year, trial_size = trial_size)
 
