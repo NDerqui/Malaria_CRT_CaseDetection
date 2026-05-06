@@ -18,11 +18,13 @@ trial_sample <- function(df, alive_by = min(df$timestep), trial_size) {
   
   require(dplyr)
   
-  # First, filter to individuals alive at our timepoint of interest.
-  # (By default, those alive at start of sim, smallest timstep)
+  # First, filter to individuals alive at our timepoint of interest (e.g. trial start):
+  # They must have not died but also they must have been born by then.
+  # (By default, those alive at start of sim, smallest timestep)
   
   df <- df %>%
-    filter(is.na(timestep_died) | timestep_died <= alive_by)
+    filter(timestep_born < alive_by) %>%
+    filter(is.na(timestep_died) | timestep_died > alive_by)
   
   # Now randomly select x number of indv as our sample
   
