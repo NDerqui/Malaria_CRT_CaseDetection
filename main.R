@@ -210,10 +210,30 @@ estimates_control <- infections_control %>%
 estimates_bednet <- infections_bednet %>%
   get_prev_inc() %>% mutate(run = "Intervention")
 
+# Quick vis
+
 plot <- rbind(estimates_control, estimates_bednet) %>%
   select(-c(n, at_risk, infections, cases, new_infections, new_cases)) %>%
   pivot_longer(-c(timestep, run), names_to = "measure", values_to = "value")
 
-ggplot(data = plot, aes(x = timestep, y = value, group = run, color = run)) +
+labels <- data.frame(measure = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
+                     label = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence"))
+
+plot <- merge(plot, labels, all = TRUE)
+
+require(rcartocolor)
+
+png(filename = "outputs_plots/outcomes.png",
+    width = 8, height = 5, units = "in", res = 1200)
+ggplot(data = plot,
+       aes(x = timestep, y = value, group = run, color = run)) +
   geom_point() + geom_line() +
-  facet_grid(measure ~ .)
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  labs(x = "Year", y = NULL,
+       title = paste0(human_population, " ppl, Sampled ", trial_size)) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
+  facet_grid(label ~ ., scales = "free")
+dev.off()
