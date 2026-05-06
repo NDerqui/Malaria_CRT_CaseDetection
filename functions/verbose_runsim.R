@@ -80,7 +80,7 @@ run_verbose_sim <- function(simparams, sim_length,
   
   simparams$progress_bar <- TRUE
   
-  simparams$infection_verbose <- FALSE
+  simparams$infection_verbose <- TRUE
   simparams$biting_verbose <- FALSE
   simparams$mortality_verbose <- TRUE
   simparams$progression_verbose <- FALSE
