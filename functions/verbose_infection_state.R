@@ -78,8 +78,8 @@ detect_infection <- function(df) {
     # but no need of timestep (as it will go row_wise)
     group_by(individual_index) %>%
     # Detect new appearances of D/T using lag function (TRUE / FALSE)
-    mutate(new_D = state == "D" & lag(state, default = first(state)) != "D") %>%
-    mutate(new_T = state == "Tr" & lag(state, default = first(state)) != "Tr") %>%
+    mutate(new_D = (state == "D" & lag(state, default = first(state)) != "D")) %>%
+    mutate(new_T = (state == "Tr" & lag(state, default = first(state)) != "Tr")) %>%
     mutate(new_case_at_time = new_T | new_D) %>%
     select(-c(new_D, new_T)) %>%
     ungroup()
