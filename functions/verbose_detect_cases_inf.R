@@ -35,7 +35,10 @@ ever_malaria <- function(df) {
 ## For new infections, analyse possible processes changes first,
 ## and select new As, Ds and Ts.
 
-detect_new_infection <- function(df) {
+## For signalling all infections or cases, no matter the start,
+## at each timestep just flag Us, As, Ds and Ts.
+
+detect_infection <- function(df) {
   
   require(dplyr)
   
@@ -55,7 +58,7 @@ detect_new_infection <- function(df) {
     # because some processes will be new infection or not depending on previous state.
     mutate(transition = paste0(process, " - ", state)) %>%
     # Everything by indv_index as we do not want timstep lag from other indv_index
-    # but not real need of timestep (as it will go row_wise)
+    # but no need of timestep (as it will go row_wise)
     group_by(individual_index) %>%
     # Detect appearances of a new infection as:
     # New D or T (by model definition, new Ds or Ts are new infections), or as
@@ -72,7 +75,7 @@ detect_new_infection <- function(df) {
     # To ensure timings of transitions come okay...
     arrange(individual_index, timestep) %>%
     # Everything by indv_index as we do not want timstep lag from other indv_index
-    # but not real need of timestep (as it will go row_wise)
+    # but no need of timestep (as it will go row_wise)
     group_by(individual_index) %>%
     # Detect new appearances of D/T using lag function (TRUE / FALSE)
     mutate(new_D = state == "D" & lag(state, default = first(state)) != "D") %>%
@@ -80,19 +83,10 @@ detect_new_infection <- function(df) {
     mutate(new_case_at_time = new_T | new_D) %>%
     select(-c(new_D, new_T)) %>%
     ungroup()
-
-  return(df)
   
-}
+  # Signal infection or case status at each timepoint
+  # (This will go rowwise, so no need to group)
 
-
-## For signalling all infections or cases, no matter the start,
-## at each timestep just flag Us, As, Ds and Ts.
-
-detect_all_infection <- function(df) {
-  
-  require(dplyr)
-  
   df <- df %>%
     # To ensure timings of transitions come okay...
     arrange(individual_index, timestep) %>%
