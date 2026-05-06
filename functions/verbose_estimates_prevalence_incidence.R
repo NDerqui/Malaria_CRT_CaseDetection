@@ -40,7 +40,7 @@ get_prev_inc <- function(df) {
       ## Ready for the each timestep calcs
       # Filter to each timestep and remove everyone dead by then (for denom)
       filter(timestep == timesteps[time]) %>%
-      filter(!is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+      filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
       # Get some basic counts
       mutate(n = n()) %>%
       mutate(at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
