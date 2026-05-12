@@ -23,6 +23,7 @@ library(individual)
 library(malariasimulation)
 
 library(tidyverse)
+library(ggpubr)
 
 
 ## Set up a couple of basic general options for simulations
@@ -190,10 +191,10 @@ source("functions/verbose_infection_state.R")
 # Run for each
 
 infections_control <- analyses_cohort_control %>%
-  detect_infection()
+  ever_malaria() %>% detect_infection()
 
 infections_bednet <- analyses_cohort_bednet %>%
-  detect_infection()
+  ever_malaria() %>% detect_infection()
 
 
 #### incidence/prevalence ####
@@ -258,31 +259,38 @@ library(tidycmprsk)
 
 plot2 <- rbind(event_time_control, event_time_bednet)
 
-plot2a <-  survfit(Surv(time_to_infection, new_infection_at_time) ~ run, data = plot2)
-plot2b <-  survfit(Surv(time_to_case, new_case_at_time) ~ run, data = plot2)
+surv_fit_a <-  survfit(Surv(time_to_infection, ever_infected) ~ run, data = plot2)
+surv_fit_b <-  survfit(Surv(time_to_case, ever_case) ~ run, data = plot2)
 
-surv_fit_a <- tidy(plot2a)
-surv_fit_b <- tidy(plot2b)
+surv_fit_a <- tidy(surv_fit_a) %>%
+  mutate(strata = gsub("run=", "", strata))
+surv_fit_b <- tidy(surv_fit_b) %>%
+  mutate(strata = gsub("run=", "", strata))
 
-ggplot(data = surv_fit_a, aes(x = time, y = estimate, color = strata, fill = strata)) +
+plot2a <- ggplot(data = surv_fit_a, aes(x = time, y = estimate, color = strata, fill = strata)) +
   geom_line(linewidth = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
   scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
-  labs(x = "Year", y = "Proportion without infection",
-       title = paste0(human_population, " ppl, Sampled ", trial_size)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year after trial start", y = "Proportion without infection") +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
 
-
-ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, fill = strata)) +
+plot2b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, fill = strata)) +
   geom_line(linewidth = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
   scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
-  labs(x = "Year", y = "Proportion without clinical case",
-       title = paste0(human_population, " ppl, Sampled ", trial_size)) +
-  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year after trial start", y = "Proportion without clinical case") +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
+
+png(filename = "outputs_plots/outcomes2.png",
+    width = 8, height = 12, units = "in", res = 1200)
+annotate_figure(ggarrange(plot2a, plot2b, nrow = 2),
+                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial"))
+dev.off()
