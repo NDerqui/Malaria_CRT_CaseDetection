@@ -239,6 +239,12 @@ dev.off()
 
 #### time-to-event ####
 
+## Function to get time to first infection / case
+
+source("functions/verbose_infection_time.R")
+
+# Apply
+
 event_time_control <- infections_control %>%
   get_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Control")
 
