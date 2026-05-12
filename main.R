@@ -68,7 +68,7 @@ snapshot_time <- 1
 
 ## Functions to set up parameters and run the verbose simulation
 
-source("functions/verbose_par_set.R")
+source("functions/verbose_set_parameters.R")
 source("functions/verbose_runsim.R")
 
 ## Basic parameters
@@ -214,17 +214,15 @@ estimates_bednet <- infections_bednet %>%
 
 plot <- rbind(estimates_control, estimates_bednet) %>%
   select(-c(n, at_risk, infections, cases, new_infections, new_cases)) %>%
-  pivot_longer(-c(timestep, run), names_to = "measure", values_to = "value")
-
-labels <- data.frame(measure = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
-                     label = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence"))
-
-plot <- merge(plot, labels, all = TRUE)
+  pivot_longer(-c(timestep, run), names_to = "measure", values_to = "value") %>%
+  mutate(measure = factor(measure,
+                          levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
+                          labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
 
 require(rcartocolor)
 
 png(filename = "outputs_plots/outcomes.png",
-    width = 10, height = 7, units = "in", res = 1200)
+    width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = plot,
        aes(x = timestep, y = value, group = run, color = run)) +
   geom_point() + geom_line() +
@@ -233,9 +231,9 @@ ggplot(data = plot,
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
   labs(x = "Year", y = NULL,
-       title = paste0(human_population, " ppl, Sampled ", trial_size)) +
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial")) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
-  facet_grid(label ~ ., scales = "free")
+  facet_grid(measure ~ ., scales = "free")
 dev.off()
 
 
