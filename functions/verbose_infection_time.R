@@ -13,21 +13,29 @@ get_time_to_event <- function(df, time_inter) {
   
   df <- df %>%
     # Censoring
-    # Leaving this space to see which indv to censor
-    ##
+    # Get time from intervention until death
+    mutate(time_to_death = timestep_died - time_inter) %>%
     # First, estimate time from intervention each timestep
     mutate(time_event = timestep - time_inter) %>%
     # Only interested in events occuring after intervention (no negative time_event)
+    # which will automatically delete anybody dead at time_intervention
     filter(timestep >= time_inter) %>%
-    # Only interested on time to new_infections or new_case
-    filter(new_infection_at_time | new_case_at_time) %>%
-    # For each individual, get smallest time
+    # For each individual, get the smallest time to a new infection or new case
     group_by(individual_index) %>%
     mutate(
       time_to_infection = if (any(new_infection_at_time)) {min(time_event[new_infection_at_time], na.rm = TRUE)} else {NA_real_},
       time_to_case = if (any(new_case_at_time)) {min(time_event[new_case_at_time], na.rm = TRUE)} else {NA_real_}) %>%
     filter(row_number() == 1) %>%
-    ungroup() 
+    ungroup() %>%
+    # Clean
+    select(
+      # Basics of each individual
+      individual_index, received_treat, received_net, removed_net,
+      # Info on death (censoring?)
+      ever_died, timestep_died, 
+      # Info on time to event, and whether they overall had the event
+      # (the new_* vars not relevant anymore as we already got timing to each new_*)
+      ever_infected, ever_case, time_to_infection, time_to_case)
     
   return(df)
 }
