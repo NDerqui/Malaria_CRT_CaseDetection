@@ -111,9 +111,9 @@ get_age_cohort <- function(df, age_snapshot, snapshot_time) {
   
   age_cohort <- age_cohort %>%
     group_by(individual_index) %>%
-    mutate(recieved_treat = case_when("Tr" %in% state ~ 1,
+    mutate(received_treat = case_when("Tr" %in% state ~ 1,
                                       !("Tr" %in% state) ~ 0)) %>%
-    mutate(recieved_net = case_when("recieved_net" %in% process ~ 1,
+    mutate(received_net = case_when("recieved_net" %in% process ~ 1,
                                     !("recieved_net" %in% process) ~ 0)) %>%
     mutate(removed_net = case_when("removed_net" %in% process ~ 1,
                                    !("removed_net" %in% process) ~ 0)) %>%
