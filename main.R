@@ -290,7 +290,7 @@ plot2b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, 
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
 
 png(filename = "outputs_plots/outcomes2.png",
-    width = 8, height = 12, units = "in", res = 1200)
+    width = 8, height = 8, units = "in", res = 1200)
 annotate_figure(ggarrange(plot2a, plot2b, nrow = 2),
                 top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial"))
 dev.off()
