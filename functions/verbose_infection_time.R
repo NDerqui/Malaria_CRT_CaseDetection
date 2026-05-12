@@ -25,6 +25,10 @@ get_time_to_event <- function(df, time_inter) {
     mutate(
       time_to_infection = if (any(new_infection_at_time)) {min(time_event[new_infection_at_time], na.rm = TRUE)} else {NA_real_},
       time_to_case = if (any(new_case_at_time)) {min(time_event[new_case_at_time], na.rm = TRUE)} else {NA_real_}) %>%
+    # Modify the ever_infected or ever_case to see individuals who have event AFTER time_inter
+    mutate(
+      ever_infected = if(any(new_infection_at_time)) {TRUE} else {FALSE},
+      ever_case = if(any(new_case_at_time)) {TRUE} else {FALSE}) %>%
     filter(row_number() == 1) %>%
     ungroup() %>%
     # Clean
