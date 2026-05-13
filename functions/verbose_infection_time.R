@@ -17,7 +17,7 @@ get_time_to_event <- function(df, time_inter) {
     mutate(time_to_death = timestep_died - time_inter) %>%
     # First, estimate time from intervention each timestep
     mutate(time_event = timestep - time_inter) %>%
-    # Only interested in events occuring after intervention (no negative time_event)
+    # Only interested in events occurring after intervention (no negative time_event)
     # which will automatically delete anybody dead at time_intervention
     filter(timestep >= time_inter) %>%
     # For each individual, get the smallest time to a new infection or new case
@@ -29,6 +29,11 @@ get_time_to_event <- function(df, time_inter) {
     mutate(
       ever_infected = if(any(new_infection_at_time)) {TRUE} else {FALSE},
       ever_case = if(any(new_case_at_time)) {TRUE} else {FALSE}) %>%
+    # Finally get the age at which each event (earliest infection or case) happens
+    # (need to add the min because sometimes we get two lines on the same timestep)
+    mutate(
+      age_at_first_infection = min(age_at_time_year[time_event == time_to_infection]),
+      age_at_first_case = min(age_at_time_year[time_event == time_to_case])) %>%
     filter(row_number() == 1) %>%
     ungroup() %>%
     # Clean
@@ -39,7 +44,8 @@ get_time_to_event <- function(df, time_inter) {
       ever_died, timestep_died, 
       # Info on time to event, and whether they overall had the event
       # (the new_* vars not relevant anymore as we already got timing to each new_*)
-      ever_infected, ever_case, time_to_infection, time_to_case)
+      ever_infected, ever_case, time_to_infection, time_to_case,
+      age_at_first_infection, age_at_first_case)
     
   return(df)
 }
