@@ -327,3 +327,13 @@ png(filename = "outputs_plots/outcomes2.png",
 annotate_figure(ggarrange(plot2a, plot2b, nrow = 2),
                 top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial"))
 dev.off()
+
+# Cox and HZ
+
+# For infection (with and without age)
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot2))
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot2))
+
+# For clinical case (with and without age)
+summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot2))
+summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot2))
