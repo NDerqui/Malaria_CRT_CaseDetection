@@ -237,6 +237,39 @@ ggplot(data = plot,
   facet_grid(measure ~ ., scales = "free")
 dev.off()
 
+# Apply to age estimates
+
+estimates_control_by_age <- infections_control %>%
+  get_prev_inc_by_age() %>% mutate(run = "Control")
+
+estimates_bednet_by_age <- infections_bednet %>%
+  get_prev_inc_by_age() %>% mutate(run = "Intervention")
+
+# Quick vis
+
+plot_by_age <- rbind(estimates_control_by_age, estimates_bednet_by_age) %>%
+  select(-c(n, at_risk, infections, cases, new_infections, new_cases)) %>%
+  pivot_longer(-c(timestep, age_at_time_year, run), names_to = "measure", values_to = "value") %>%
+  mutate(measure = factor(measure,
+                          levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
+                          labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
+
+png(filename = "outputs_plots/outcomes_by_age.png",
+    width = 12, height = 8, units = "in", res = 1200)
+ggplot(data = filter(plot_by_age, age_at_time_year %in% c(1, 2, 5, 10)),
+       aes(x = timestep, y = value, group = run, color = run)) +
+  geom_point() + geom_line() +
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  labs(x = "Year", y = NULL,
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial")) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
+  facet_grid(age_at_time_year ~ measure, scales = "free")
+
+dev.off()
+
 
 #### time-to-event ####
 
