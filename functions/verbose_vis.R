@@ -12,7 +12,7 @@ plot_verbose <- function(df, sim_length, human_population, trial_size, note) {
   month <- 30
   year <- 365
   
-  dir.create("outputs_plots/", , showWarnings = FALSE)
+  dir.create("outputs_plots/", showWarnings = FALSE)
   
   require(ggplot2)
   require(rcartocolor)
