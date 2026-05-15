@@ -166,7 +166,6 @@ write.csv(analyses_cohort_control, row.names = FALSE,
 write.csv(analyses_cohort_bednet, row.names = FALSE,
           file = paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_bednet.csv"))
 
-
 ## Check
 
 # Plot the control (no bednet)
@@ -290,6 +289,8 @@ dev.off()
 
 source("functions/verbose_infection_time.R")
 
+## For time since (first intervention)
+
 # Apply
 
 event_time_control <- infections_control %>%
@@ -336,6 +337,66 @@ plot2b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, 
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
 
 png(filename = "outputs_plots/outcomes2.png",
+    width = 8, height = 8, units = "in", res = 1200)
+annotate_figure(ggarrange(plot2a, plot2b, nrow = 2),
+                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial"))
+dev.off()
+
+# Cox and HZ
+
+# For infection (with and without age)
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot2))
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot2))
+
+# For clinical case (with and without age)
+summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot2))
+summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot2))
+
+## For time since second intervention
+
+# Apply
+
+event_time_control <- infections_control %>%
+  get_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Control")
+
+event_time_bednet <- infections_bednet %>%
+  get_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Intervention")
+
+# Quick vis
+
+plot2 <- rbind(event_time_control, event_time_bednet)
+
+surv_fit_a <-  survfit(Surv(time_to_infection, ever_infected) ~ run, data = plot2)
+surv_fit_b <-  survfit(Surv(time_to_case, ever_case) ~ run, data = plot2)
+
+surv_fit_a <- tidy(surv_fit_a) %>%
+  mutate(strata = gsub("run=", "", strata))
+surv_fit_b <- tidy(surv_fit_b) %>%
+  mutate(strata = gsub("run=", "", strata))
+
+plot2a <- ggplot(data = surv_fit_a, aes(x = time, y = estimate, color = strata, fill = strata)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year after second intervention", y = "Proportion without infection") +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
+
+plot2b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, fill = strata)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year after second intervention", y = "Proportion without clinical case") +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
+
+png(filename = "outputs_plots/outcomes3.png",
     width = 8, height = 8, units = "in", res = 1200)
 annotate_figure(ggarrange(plot2a, plot2b, nrow = 2),
                 top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial"))
