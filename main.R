@@ -64,6 +64,10 @@ key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
 snapshot_time <- 1
 
+# Add a "trial name" to keep track of results
+
+trial_name <- paste0("Basic Init EIR ", init_EIR)
+
 
 #### run sim ####
 
@@ -153,6 +157,15 @@ analyses_cohort_bednet <- df_bednet %>%
 
 rm(df_control, df_bednet, df_control_age, df_bednet_age)
 gc()
+
+# Save for future
+
+dir.create("outputs_agecohort_data", showWarnings = FALSE)
+write.csv(analyses_cohort_control, row.names = FALSE,
+          file = paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_control.csv"))
+write.csv(analyses_cohort_bednet, row.names = FALSE,
+          file = paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_bednet.csv"))
+
 
 ## Check
 
