@@ -41,7 +41,7 @@ month <- 30
 # General inputs: init_EIR, and
 # total sim size versus pop followed (analyses performed) at trial.
 
-init_EIR <- 15
+init_EIR <- 5
 
 human_population <- 10000
 trial_size <- 100
@@ -66,7 +66,7 @@ snapshot_time <- 1
 
 # Add a "trial name" to keep track of results
 
-trial_name <- paste0("Basic Init EIR ", init_EIR)
+trial_name <- paste0("Seasonal Init EIR ", init_EIR)
 
 
 #### run sim ####
@@ -170,20 +170,20 @@ write.csv(analyses_cohort_bednet, row.names = FALSE,
 
 # Plot the control (no bednet)
 
-png(filename = "outputs_plots/agecohort_overtime_control.png",
+png(filename = paste0("outputs_plots/agecohort_overtime_control_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 5, units = "in", res = 1200)
 plot_verbose_itn(df = analyses_cohort_control,
-                 note = "Control", sim_length = sim_length,
+                 note = paste0("Control: ", trial_name), sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year)
 dev.off()
 
 # Plot the bednet
 
-png(filename = "outputs_plots/agecohort_overtime_bednet.png",
+png(filename = paste0("outputs_plots/agecohort_overtime_bednet_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 5, units = "in", res = 1200)
 plot_verbose_itn(df = analyses_cohort_bednet,
-                 note = "Intervention", sim_length = sim_length,
+                 note = paste0("Intervention: ", trial_name), sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed")
@@ -234,7 +234,7 @@ plot <- rbind(estimates_control, estimates_bednet) %>%
 
 require(rcartocolor)
 
-png(filename = "outputs_plots/outcomes.png",
+png(filename = paste0("outputs_plots/outcomes_prev_inc_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = plot,
        aes(x = timestep, y = value, group = run, color = run)) +
@@ -244,7 +244,7 @@ ggplot(data = plot,
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
   labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial")) +
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_grid(measure ~ ., scales = "free")
 dev.off()
@@ -266,7 +266,7 @@ plot_by_age <- rbind(estimates_control_by_age, estimates_bednet_by_age) %>%
                           levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
                           labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
 
-png(filename = "outputs_plots/outcomes_by_age.png",
+png(filename = paste0("outputs_plots/outcomes_prev_by_age_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = filter(plot_by_age, age_at_time_year %in% c(1, 2, 5, 10)),
        aes(x = timestep, y = value, group = run, color = run)) +
@@ -276,7 +276,7 @@ ggplot(data = filter(plot_by_age, age_at_time_year %in% c(1, 2, 5, 10)),
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
   labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial")) +
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_grid(age_at_time_year ~ measure, scales = "free")
 
@@ -336,10 +336,10 @@ plot2b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, 
   labs(x = "Year after trial start", y = "Proportion without clinical case") +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
 
-png(filename = "outputs_plots/outcomes2.png",
+png(filename = paste0("outputs_plots/outcomes_time_to_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 8, units = "in", res = 1200)
 annotate_figure(ggarrange(plot2a, plot2b, nrow = 2),
-                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial"))
+                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name))
 dev.off()
 
 # Cox and HZ
@@ -396,10 +396,10 @@ plot2b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, 
   labs(x = "Year after second intervention", y = "Proportion without clinical case") +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
 
-png(filename = "outputs_plots/outcomes3.png",
+png(filename = paste0("outputs_plots/outcomes_time_to_2_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 8, units = "in", res = 1200)
 annotate_figure(ggarrange(plot2a, plot2b, nrow = 2),
-                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial"))
+                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name))
 dev.off()
 
 # Cox and HZ
