@@ -3,7 +3,8 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
 
-## Modelling case detection in malaria CRTs using verbose simulations.
+## Modelling case detection in malaria CRTs using verbose simulations:
+## set up parameters, run sim, clean and save analyses cohort.
 
 
 
@@ -17,9 +18,6 @@ rm(list = ls())
 # remotes::install_github("mrc-ide/individual@dev")
 # remotes::install_github("JasonRWood/malariasimulation@verbose_simulations")
 library(individual)
-# library(devtools)
-# setwd("~/Code_base/malariasimulation/")
-# load_all(".")
 library(malariasimulation)
 
 library(tidyverse)
@@ -118,7 +116,7 @@ df_bednet$state <- out$state_list[df_bednet$state_index]
 
 write.csv(df_bednet, "outputs_verbose_sims/verbose_dumping_bednet.csv", row.names = FALSE)
 
-## Read the verbose files
+## Read the verbose files only
 
 rm(out)
 
@@ -131,13 +129,16 @@ df_bednet_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_bednet.
 gc()
 
 
+
+# CLEAN SIM OUTPUT --------------------------------------------------------
+
+
 #### analyses cohort ####
 
 ## Simple clean to subtract to the cohort we can follow with age.
 
 source("functions/verbose_dataclean_agecohort.R")
 source("functions/verbose_dataclean_trial_sample.R")
-source("functions/verbose_vis.R")
 
 # Filter individuals born / with age from snapshot,
 # estimate their age at each timestep and final age (at death or sim end),
@@ -166,7 +167,11 @@ write.csv(analyses_cohort_control, row.names = FALSE,
 write.csv(analyses_cohort_bednet, row.names = FALSE,
           file = paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_bednet.csv"))
 
-## Check
+
+#### vis ####
+
+dir.create("outputs_plots", showWarnings = FALSE)
+source("functions/verbose_vis.R")
 
 # Plot the control (no bednet)
 
@@ -188,226 +193,3 @@ plot_verbose_itn(df = analyses_cohort_bednet,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed")
 dev.off()
-
-
-
-# ANALYSES ----------------------------------------------------------------
-
-
-#### infections/cases ####
-
-## Functions to signal infection/case, at time and overall
-
-source("functions/verbose_infection_state.R")
-
-# Run for each
-
-infections_control <- analyses_cohort_control %>%
-  ever_malaria() %>% detect_infection()
-
-infections_bednet <- analyses_cohort_bednet %>%
-  ever_malaria() %>% detect_infection()
-
-
-#### incidence/prevalence ####
-
-## Functions to get incidence/prevalence at each timestep
-
-source("functions/verbose_prevalence_incidence.R")
-
-# Apply
-
-estimates_control <- infections_control %>%
-  get_prev_inc() %>% mutate(run = "Control")
-
-estimates_bednet <- infections_bednet %>%
-  get_prev_inc() %>% mutate(run = "Intervention")
-
-# Quick vis
-
-plot <- rbind(estimates_control, estimates_bednet) %>%
-  select(-c(n, at_risk, infections, cases, new_infections, new_cases)) %>%
-  pivot_longer(-c(timestep, run), names_to = "measure", values_to = "value") %>%
-  mutate(measure = factor(measure,
-                          levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
-                          labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
-
-require(rcartocolor)
-
-png(filename = paste0("outputs_plots/outcomes_prev_inc_", gsub(" ", "_", tolower(trial_name)), ".png"),
-    width = 12, height = 8, units = "in", res = 1200)
-ggplot(data = plot,
-       aes(x = timestep, y = value, group = run, color = run)) +
-  geom_point() + geom_line() +
-  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                     labels = (0:sim_length)) +
-  labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
-  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
-  facet_grid(measure ~ ., scales = "free")
-dev.off()
-
-# Apply to age estimates
-
-estimates_control_by_age <- infections_control %>%
-  get_prev_inc_by_age() %>% mutate(run = "Control")
-
-estimates_bednet_by_age <- infections_bednet %>%
-  get_prev_inc_by_age() %>% mutate(run = "Intervention")
-
-# Quick vis
-
-plot_by_age <- rbind(estimates_control_by_age, estimates_bednet_by_age) %>%
-  select(-c(n, at_risk, infections, cases, new_infections, new_cases)) %>%
-  pivot_longer(-c(timestep, age_at_time_year, run), names_to = "measure", values_to = "value") %>%
-  mutate(measure = factor(measure,
-                          levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
-                          labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
-
-png(filename = paste0("outputs_plots/outcomes_prev_by_age_", gsub(" ", "_", tolower(trial_name)), ".png"),
-    width = 12, height = 8, units = "in", res = 1200)
-ggplot(data = filter(plot_by_age, age_at_time_year %in% c(1, 2, 5, 10)),
-       aes(x = timestep, y = value, group = run, color = run)) +
-  geom_point() + geom_line() +
-  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                     labels = (0:sim_length)) +
-  labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
-  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
-  facet_grid(age_at_time_year ~ measure, scales = "free")
-
-dev.off()
-
-
-#### time-to-event ####
-
-## Function to get time to first infection / case
-
-source("functions/verbose_infection_time.R")
-
-## For time since (first intervention)
-
-# Apply
-
-event_time_control <- infections_control %>%
-  get_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Control")
-
-event_time_bednet <- infections_bednet %>%
-  get_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Intervention")
-
-# Quick vis
-
-library(survival)
-library(tidycmprsk)
-
-plot2 <- rbind(event_time_control, event_time_bednet)
-
-surv_fit_a <-  survfit(Surv(time_to_infection, ever_infected) ~ run, data = plot2)
-surv_fit_b <-  survfit(Surv(time_to_case, ever_case) ~ run, data = plot2)
-
-surv_fit_a <- tidy(surv_fit_a) %>%
-  mutate(strata = gsub("run=", "", strata))
-surv_fit_b <- tidy(surv_fit_b) %>%
-  mutate(strata = gsub("run=", "", strata))
-
-plot2a <- ggplot(data = surv_fit_a, aes(x = time, y = estimate, color = strata, fill = strata)) +
-  geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
-  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                     labels = (0:sim_length)) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "Year after trial start", y = "Proportion without infection") +
-  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
-
-plot2b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, fill = strata)) +
-  geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
-  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                     labels = (0:sim_length)) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "Year after trial start", y = "Proportion without clinical case") +
-  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
-
-png(filename = paste0("outputs_plots/outcomes_time_to_", gsub(" ", "_", tolower(trial_name)), ".png"),
-    width = 8, height = 8, units = "in", res = 1200)
-annotate_figure(ggarrange(plot2a, plot2b, nrow = 2),
-                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name))
-dev.off()
-
-# Cox and HZ
-
-# For infection (with and without age)
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot2))
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot2))
-
-# For clinical case (with and without age)
-summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot2))
-summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot2))
-
-## For time since second intervention
-
-# Apply
-
-event_time_control <- infections_control %>%
-  get_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Control")
-
-event_time_bednet <- infections_bednet %>%
-  get_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Intervention")
-
-# Quick vis
-
-plot2 <- rbind(event_time_control, event_time_bednet)
-
-surv_fit_a <-  survfit(Surv(time_to_infection, ever_infected) ~ run, data = plot2)
-surv_fit_b <-  survfit(Surv(time_to_case, ever_case) ~ run, data = plot2)
-
-surv_fit_a <- tidy(surv_fit_a) %>%
-  mutate(strata = gsub("run=", "", strata))
-surv_fit_b <- tidy(surv_fit_b) %>%
-  mutate(strata = gsub("run=", "", strata))
-
-plot2a <- ggplot(data = surv_fit_a, aes(x = time, y = estimate, color = strata, fill = strata)) +
-  geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
-  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                     labels = (0:sim_length)) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "Year after second intervention", y = "Proportion without infection") +
-  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
-
-plot2b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, fill = strata)) +
-  geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
-  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                     labels = (0:sim_length)) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "Year after second intervention", y = "Proportion without clinical case") +
-  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
-
-png(filename = paste0("outputs_plots/outcomes_time_to_2_", gsub(" ", "_", tolower(trial_name)), ".png"),
-    width = 8, height = 8, units = "in", res = 1200)
-annotate_figure(ggarrange(plot2a, plot2b, nrow = 2),
-                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name))
-dev.off()
-
-# Cox and HZ
-
-# For infection (with and without age)
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot2))
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot2))
-
-# For clinical case (with and without age)
-summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot2))
-summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot2))
