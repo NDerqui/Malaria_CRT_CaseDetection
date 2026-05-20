@@ -39,7 +39,7 @@ month <- 30
 # General inputs: init_EIR, and
 # total sim size versus pop followed (analyses performed) at trial.
 
-init_EIR <- 5
+init_EIR <- 1
 
 human_population <- 10000
 trial_size <- 100
