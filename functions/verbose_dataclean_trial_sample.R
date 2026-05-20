@@ -14,7 +14,7 @@
 # Note, only going to subset among those alive at key timestep (i.e. trial start),
 # thus need to run function after getting the timestep_died.
 
-trial_sample <- function(df, alive_by = min(df$timestep), trial_size) {
+get_enrol_sample <- function(df, alive_by = min(df$timestep), trial_size) {
   
   require(dplyr)
   

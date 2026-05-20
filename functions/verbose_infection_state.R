@@ -13,7 +13,7 @@
 ## Signal an ever_infected or ever_case, as the individuals
 ## who overall ever had malaria or a clinical case.
 
-ever_malaria <- function(df) {
+detect_ever_malaria <- function(df) {
   
   require(dplyr)
   
