@@ -14,17 +14,27 @@
 # Note, only going to subset among those alive at key timestep (i.e. trial start),
 # thus need to run function after getting the timestep_died.
 
-get_enrol_sample <- function(df, alive_by = min(df$timestep), trial_size) {
+get_enrol_sample <- function(df, alive_by = min(df$timestep), trial_size,
+                             age_min = 0, age_max = 100) {
+  
+  year <- 365
   
   require(dplyr)
   
   # First, filter to individuals alive at our timepoint of interest (e.g. trial start):
   # They must have not died but also they must have been born by then.
   # (By default, those alive at start of sim, smallest timestep)
+  # Finally, if desired, sample only a particular age group at our timepoint
+  # (by default, everyone 0-100 years)
   
   df <- df %>%
     filter(timestep_born < alive_by) %>%
-    filter(is.na(timestep_died) | timestep_died > alive_by)
+    filter(is.na(timestep_died) | timestep_died > alive_by) %>%
+    # With the age group, we want people that at trial start have a particular age
+    group_by(individual_index) %>%
+    mutate(in_age_group = any(age_at_time[timestep == alive_by] >= (age_min * year) & age_at_time[timestep == alive_by] <= (age_max * year))) %>%
+    ungroup() %>%
+    filter(in_age_group) %>% select(-in_age_group)
   
   # Now randomly select x number of indv as our sample
   
