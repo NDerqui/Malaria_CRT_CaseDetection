@@ -5,14 +5,15 @@
 
 # DESCRIPTION:
 
-# Functions to get:
+# Functions to get time to event (first infection or first clinical case).
+# Able to control from where to start counting time:
+# e.g. start of trial or introduction of second intervention.
 
 get_time_to_event <- function(df, time_inter) {
   
   require(dplyr)
   
   df <- df %>%
-    # Censoring
     # Get time from intervention until death
     mutate(time_to_death = timestep_died - time_inter) %>%
     # First, estimate time from intervention each timestep
@@ -40,7 +41,7 @@ get_time_to_event <- function(df, time_inter) {
     select(
       # Basics of each individual
       individual_index, received_treat, received_net, removed_net,
-      # Info on death (censoring?)
+      # Info on death (for censoring later)
       ever_died, timestep_died, 
       # Info on time to event, and whether they overall had the event
       # (the new_* vars not relevant anymore as we already got timing to each new_*)
@@ -50,3 +51,37 @@ get_time_to_event <- function(df, time_inter) {
   return(df)
 }
 
+# Prepare data for survival analysis:
+# individuals without the event (infection or case) need a censoring time:
+# either end of follow up period or death (censor if died).
+# Follow up period is from start of time-to-event measure until sim end.
+
+# (Keep this separate from above as it's counter-intuitive to have time-to-event
+# if not having the event, only makes sense if performing a survival analysis)
+
+prepare_survival <- function(df, time_inter, sim_length) {
+  
+  require(dplyr)
+  
+  df <- df %>%
+    # Modify our time-to-event variables for infection
+    mutate(time_to_infection = case_when(
+      # keep our estimate if indv had the event
+      ever_infected == TRUE ~ time_to_infection,
+      # time until end of follow up if no infection or death
+      ever_infected == FALSE & ever_died == 0 ~ (sim_length - time_inter), 
+      # time until death if no infection but died
+      ever_infected == FALSE & ever_died == 1 ~ (timestep_died - time_inter)
+    )) %>%
+    # Modify our time-to-event variables for cases
+    mutate(time_to_case = case_when(
+      # keep our estimate if indv had the event
+      ever_case == TRUE ~ time_to_case,
+      # time until end of follow up if no case or death
+      ever_case == FALSE & ever_died == 0 ~ (sim_length - time_inter), 
+      # time until death if no case but died
+      ever_case == FALSE & ever_died == 1 ~ (timestep_died - time_inter)
+    ))
+
+  return(df)
+}
