@@ -67,10 +67,10 @@ source("functions/verbose_infection_state.R")
 # Run for each
 
 infections_control <- analyses_cohort_control %>%
-  ever_malaria() %>% detect_infection()
+  detect_ever_malaria() %>% detect_infection()
 
 infections_bednet <- analyses_cohort_bednet %>%
-  ever_malaria() %>% detect_infection()
+  detect_ever_malaria() %>% detect_infection()
 
 
 #### incidence/prevalence ####
@@ -151,15 +151,13 @@ dev.off()
 # TIME-TO-EVENT -----------------------------------------------------------
 
 
-#### time-to-event ####
-
 ## Function to get time to first infection / case
 
 source("functions/verbose_infection_time.R")
 
-## For time since (first intervention)
+#### time-to-first-infection ####
 
-# Apply
+## For time since (first intervention)
 
 event_time_control <- infections_control %>%
   get_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Control")
@@ -167,36 +165,35 @@ event_time_control <- infections_control %>%
 event_time_bednet <- infections_bednet %>%
   get_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Intervention")
 
-# Quick vis
+# Survival analysis
 
 library(survival)
 library(tidycmprsk)
 
-plot_survival <- rbind(event_time_control, event_time_bednet)
+# Prepare for survival analysis (with censoring time)
 
-# Not in function, as conceptually these indv don't have the infection, but
-# in survival analysis need to fill time_to_event for indv without event.
-# This time should be max follow up time (from trial start til end of sim).
+plot_survival_data <- rbind(event_time_control, event_time_bednet) %>%
+  prepare_survival(time_inter = trial_start*year, sim_length = sim_length*year)
 
-# However, if indv dies before end of follow up, should be right censored.
-# So time-to-event needs to reflect time from trial start to death.
+# Run models
 
-plot_survival$time_to_infection[plot_survival$ever_infected == FALSE & plot$ever_died == 0] <- (sim_length - trial_start)*year
-plot_survival$time_to_infection[plot_survival$ever_infected == FALSE & plot$ever_died == 1] <- timestep_died - (trial_start)*year
-plot_survival$time_to_case[plot_survival$ever_case == FALSE & plot$ever_died == 0] <- (sim_length - trial_start)*year
-plot_survival$time_to_case[plot_survival$ever_case == FALSE & plot$ever_died == 1] <- timestep_died - (trial_start)*year
+surv_fit_1infection <-  survfit(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_data)
+surv_fit_1case <-  survfit(Surv(time_to_case, ever_case) ~ run, data = plot_survival_data)
 
-surv_fit_a <-  survfit(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival)
-surv_fit_b <-  survfit(Surv(time_to_case, ever_case) ~ run, data = plot_survival)
-
-surv_fit_a <- tidy(surv_fit_a) %>%
+surv_fit_1infection <- tidy(surv_fit_1infection) %>%
   mutate(strata = gsub("run=", "", strata))
-surv_fit_b <- tidy(surv_fit_b) %>%
+surv_fit_1case <- tidy(surv_fit_1case) %>%
   mutate(strata = gsub("run=", "", strata))
 
-plot_survival_a <- ggplot(data = surv_fit_a, aes(x = time, y = estimate, color = strata, fill = strata)) +
+# Plot
+
+plot_survival_a <- ggplot(data = surv_fit_1infection,
+                          aes(x = time, y = estimate, color = strata, fill = strata)) +
   geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.3) +
+  geom_point(data = surv_fit_1infection[surv_fit_1infection$n.censor != 0,],
+             aes(x = time, y = estimate,color = strata, fill = strata),
+             shape = 4, size = 4) +
   scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
@@ -205,9 +202,13 @@ plot_survival_a <- ggplot(data = surv_fit_a, aes(x = time, y = estimate, color =
   labs(x = "Year after trial start", y = "Proportion without infection") +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
 
-plot_survival_b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, fill = strata)) +
+plot_survival_b <- ggplot(data = surv_fit_1case,
+                          aes(x = time, y = estimate, color = strata, fill = strata)) +
   geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.3) +
+  geom_point(data = surv_fit_1case[surv_fit_1case$n.censor != 0,],
+             aes(x = time, y = estimate,color = strata, fill = strata),
+             shape = 4, size = 4) +
   scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
@@ -225,16 +226,17 @@ dev.off()
 # Cox and HZ
 
 # For infection (with and without age)
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival))
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot_survival))
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_data))
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot_survival_data))
 
 # For clinical case (with and without age)
-summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot_survival))
-summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot_survival))
+summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot_survival_data))
+summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot_survival_data))
+
+
+#### time-to-second-itn ####
 
 ## For time since second intervention
-
-# Apply
 
 event_time_control <- infections_control %>%
   get_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Control")
@@ -242,30 +244,33 @@ event_time_control <- infections_control %>%
 event_time_bednet <- infections_bednet %>%
   get_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Intervention")
 
-# Quick vis
+# Survival analysis
 
-plot_survival_2 <- rbind(event_time_control, event_time_bednet)
+# Prepare for survival analysis (with censoring time)
 
-# Not in function, as conceptually these indv don't have the infection, but
-# in survival analysis need to fill time_to_event for indv without event.
-# This time should be max follow up time (from trial start til end of sim).
+plot_survival_data_2 <- rbind(event_time_control, event_time_bednet) %>%
+  prepare_survival(time_inter = (trial_start + trial_second_intervention)*year,
+                   sim_length = sim_length*year)
 
-plot_survival_2$time_to_infection[plot_survival_2$ever_infected == FALSE & plot$ever_died == 0] <- (sim_length - (trial_start + trial_second_intervention))*year
-plot_survival_2$time_to_infection[plot_survival_2$ever_infected == FALSE & plot$ever_died == 1] <- timestep_died - (trial_start + trial_second_intervention)*year
-plot_survival_2$time_to_case[plot_survival_2$ever_case == FALSE & plot$ever_died == 0] <- (sim_length - (trial_start + trial_second_intervention))*year
-plot_survival_2$time_to_case[plot_survival_2$ever_case == FALSE & plot$ever_died == 1] <- timestep_died - (trial_start + trial_second_intervention)*year
+# Run models
 
-surv_fit_a <-  survfit(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_2)
-surv_fit_b <-  survfit(Surv(time_to_case, ever_case) ~ run, data = plot_survival_2)
+surv_fit_2infection <-  survfit(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_data_2)
+surv_fit_2case <-  survfit(Surv(time_to_case, ever_case) ~ run, data = plot_survival_data_2)
 
-surv_fit_a <- tidy(surv_fit_a) %>%
+surv_fit_2infection <- tidy(surv_fit_2infection) %>%
   mutate(strata = gsub("run=", "", strata))
-surv_fit_b <- tidy(surv_fit_b) %>%
+surv_fit_2case <- tidy(surv_fit_2case) %>%
   mutate(strata = gsub("run=", "", strata))
 
-plot_survival_2a <- ggplot(data = surv_fit_a, aes(x = time, y = estimate, color = strata, fill = strata)) +
+# Plot
+
+plot_survival_2a <- ggplot(data = surv_fit_2infection,
+                           aes(x = time, y = estimate, color = strata, fill = strata)) +
   geom_line(linewidth = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  geom_point(data = surv_fit_2infection[surv_fit_2infection$n.censor != 0,],
+             aes(x = time, y = estimate,color = strata, fill = strata),
+             shape = 4, size = 4) +
   scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
@@ -274,9 +279,13 @@ plot_survival_2a <- ggplot(data = surv_fit_a, aes(x = time, y = estimate, color 
   labs(x = "Year after second intervention", y = "Proportion without infection") +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
 
-plot_survival_2b <- ggplot(data = surv_fit_b, aes(x = time, y = estimate, color = strata, fill = strata)) +
+plot_survival_2b <- ggplot(data = surv_fit_2case,
+                           aes(x = time, y = estimate, color = strata, fill = strata)) +
   geom_line(linewidth = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  geom_point(data = surv_fit_2case[surv_fit_2case$n.censor != 0,],
+             aes(x = time, y = estimate,color = strata, fill = strata),
+             shape = 4, size = 4) +
   scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
@@ -294,9 +303,9 @@ dev.off()
 # Cox and HZ
 
 # For infection (with and without age)
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_2))
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot_survival_2))
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_data_2))
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot_survival_data_2))
 
 # For clinical case (with and without age)
-summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot_survival_2))
-summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot_survival_2))
+summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot_survival_data_2))
+summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot_survival_data_2))
