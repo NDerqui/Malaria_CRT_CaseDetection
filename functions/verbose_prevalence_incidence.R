@@ -1,6 +1,6 @@
 
 # INPUT: a df with new infections or cases flagged (still one obs per time per person).
-# OUTPUT: a df with one observation per timestep, with information on prevcalence and incidence.
+# OUTPUT: a df with one observation per timestep, with information on prevalence and incidence.
 
 
 # DESCRIPTION:
@@ -10,6 +10,9 @@
 # infection incidence at each timestep (newly infected at timestep/population at risk),
 # case prevalence at each timestep (case at timestep/population),
 # case incidence at each timestep (newly clinical case at timestep/population at risk).
+
+# Option to get them for all timepoints (above),
+# or preva/incidence as captured by a cross-sectional survey (specific timeoints).
 
 get_prev_inc <- function(df) {
   
@@ -24,12 +27,9 @@ get_prev_inc <- function(df) {
   
   for (time in 1:length(timesteps)) {
     
-    #new_infection_at_time
-    #new_case_at_time
-    #infected_at_time
-    #case_at_time
-    
     add <- df %>%
+      # To ensure timings of transitions come okay...
+      arrange(individual_index, timestep) %>%
       ## Get no. at risk in this timestep considering prev timstep:
       # To later get no. at risk, get the state at our prior timestep.
       # No at risk of incident infection won't include infected in previous timestep.
@@ -81,12 +81,9 @@ get_prev_inc_by_age <- function(df) {
   
   for (time in 1:length(timesteps)) {
     
-    #new_infection_at_time
-    #new_case_at_time
-    #infected_at_time
-    #case_at_time
-    
     add <- df %>%
+      # To ensure timings of transitions come okay...
+      arrange(individual_index, timestep) %>%
       ## Get no. at risk in this timestep considering prev timstep:
       # To later get no. at risk, get the state at our prior timestep.
       # No at risk of incident infection won't include infected in previous timestep.
@@ -119,6 +116,130 @@ get_prev_inc_by_age <- function(df) {
       select(timestep, age_at_time_year, n, at_risk,
              infections, cases, new_infections, new_cases,
              prevalence_infec, prevalence_case, incidence_infec, incidence_case)
+    
+    result <- rbind(result, add)
+    rm(add)
+  }
+  
+  return(result)
+}
+
+
+# ONLY FOR SELECTED TIMESTEPS (CROSS-SECTIONAL SURVEYS)
+
+get_prev_survey <- function(df, cross_surveys, trial_start) {
+  
+  require(dplyr)
+  year <- 365
+  
+  # Before getting any prevalence estimate,
+  # subset to the timepoints of the cross-sectional survey
+  
+  # IMP: cross surveys passed as year measure, i.e. 6 month = 0.5 year
+  
+  cross_survey_times <- (trial_start + cross_surveys)*year
+  
+  df <- df %>%
+    filter(timestep %in% cross_survey_times)
+  
+  # Prepare to iter over all timesteps
+  
+  timesteps <- unique(df$timestep)
+  result <- data.frame()
+  
+  # Loop over all timesteps to get prevalence and incidence at each timstep
+  
+  for (time in 1:length(timesteps)) {
+    
+    add <- df %>%
+      ## Ready for the each timestep calcs
+      # Filter to each timestep and remove everyone dead by then (for denom)
+      filter(timestep == timesteps[time]) %>%
+      filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+      # Get some basic counts
+      mutate(n = n()) %>%
+      mutate(infections = sum(infected_at_time)) %>%
+      mutate(cases = sum(case_at_time)) %>%
+      # Incidence and Prevalence calcs
+      mutate(prevalence_infec = infections/n) %>%
+      mutate(prevalence_case = cases/n) %>%
+      # Cleaning
+      group_by(timestep) %>% filter(row_number() == 1) %>% ungroup() %>%
+      select(timestep, n,
+             infections, cases, prevalence_infec, prevalence_case)
+    
+    result <- rbind(result, add)
+    rm(add)
+  }
+  
+  return(result)
+}
+
+get_inc_survey <- function(df, routine_visits, trial_start, days_catchment) {
+  
+  require(dplyr)
+  year <- 365
+  
+  # Before getting any incidence estimate,
+  # need to prepare data flagging for each indv and timestep their previous state.
+  
+  df <- df %>%
+    # To ensure timings of transitions come okay...
+    arrange(individual_index, timestep) %>%
+    ## For incidence calcs:
+    # get no. at risk at each timestep considering prev timstep.
+    # No at risk of incident infection won't include infected in previous timestep.
+    group_by(individual_index) %>%
+    mutate(prev_state = lag(state)) %>%
+    ungroup()
+    
+  # Subset to the timepoints of the cross-sectional survey.
+  # For incidence calcs we want a "catchment period" too:
+  # include new infections in last x days to model "tested for malaria if fever <48 h"
+  
+  # IMP: routine visits passed as week measure (7 days)
+  
+  routine_visits_times <- (trial_start*year + routine_visits*7)
+  # Get all events happening in interval (each_timepoint - days_catchment):each_timestep
+  routine_visits_timesteps <- unlist( 
+    lapply(routine_visits_times,
+           function(routine_visits_times){
+             return((routine_visits_times - days_catchment):routine_visits_times)}))
+  # But then we want to aggregate all events happening in the interval to each routine visit time
+  # Do so with an equivalence data frame (each visit timestep duplicated according to no of days in interval)
+  time_eq <- data.frame(timestep = routine_visits_timesteps,
+                        timestep_agg = unlist(lapply(routine_visits_times, rep, times = (1+days_catchment))))
+  
+  df <- df %>%
+    filter(timestep %in% routine_visits_timesteps) %>%
+    merge(time_eq) %>% select(-timestep) %>% rename(timestep = timestep_agg)
+  
+  # Prepare to iter over all timesteps
+  
+  timesteps <- unique(df$timestep)
+  result <- data.frame()
+  
+  # Loop over all timesteps to get prevalence and incidence at each timstep
+  
+  for (time in 1:length(timesteps)) {
+    
+    add <- df %>%
+      ## Ready for the each timestep calcs
+      # Filter to each timestep and remove everyone dead by then (for denom)
+      filter(timestep == timesteps[time]) %>%
+      filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+      # Get some basic counts
+      mutate(n = n()) %>%
+      mutate(at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
+      mutate(new_infections = sum(new_infection_at_time)) %>%
+      mutate(new_cases = sum(new_case_at_time)) %>%
+      # Incidence and Prevalence calcs
+      mutate(incidence_infec = new_infections/at_risk) %>%
+      mutate(incidence_case = new_cases/at_risk) %>%
+      # Cleaning
+      group_by(timestep) %>% filter(row_number() == 1) %>% ungroup() %>%
+      select(timestep, n, at_risk, new_infections, new_cases,
+             incidence_infec, incidence_case)
     
     result <- rbind(result, add)
     rm(add)
