@@ -54,10 +54,6 @@ analyses_cohort_control <- read.csv(paste0("outputs_agecohort_data/", gsub(" ", 
 analyses_cohort_bednet <- read.csv(paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_bednet.csv"))
 
 
-
-# INCIDENCE / PREVALENCE ----------------------------------------------------------------
-
-
 #### infections/cases ####
 
 ## Functions to signal infection/case, at time and overall
@@ -71,6 +67,10 @@ infections_control <- analyses_cohort_control %>%
 
 infections_bednet <- analyses_cohort_bednet %>%
   detect_ever_malaria() %>% detect_infection()
+
+
+
+# INCIDENCE / PREVALENCE ----------------------------------------------------------------
 
 
 #### incidence/prevalence ####
@@ -113,6 +113,9 @@ ggplot(data = plot_prev_inc,
   facet_grid(measure ~ ., scales = "free")
 dev.off()
 
+
+#### with cross-sectional surveys ####
+
 # Get prevalence estimates as if by a cross sectional survey 
 # (imp, cross surveys passed as year measure, i.e. 6 month = 0.5 year)
 
@@ -150,13 +153,15 @@ plot_inc_survey <- rbind(estimates_control_inc_survey, estimates_bednet_inc_surv
                           levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
                           labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
 
+png(filename = paste0("outputs_plots/outcomes_survey_prev_inc_", gsub(" ", "_", tolower(trial_name)), ".png"),
+    width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = plot_prev_inc,
        aes(x = timestep, y = value, group = run, color = run)) +
   geom_point(alpha = 0.75) + geom_line(alpha = 0.75) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
   geom_point(data = plot_prev_survey, size = 3,
              aes(x = timestep, y = value, group = run, color = run)) +
-  geom_point(data = plot_inc_survey, size = 3,
+  geom_point(data = plot_inc_survey, size = 1.5,
              aes(x = timestep, y = value, group = run, color = run)) +
   scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10, 3, 8)],
                      breaks = c("Control", "Intervention", "Prevalence Survey", "Incidence Routine Visits")) +
@@ -166,6 +171,10 @@ ggplot(data = plot_prev_inc,
        title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_grid(measure ~ ., scales = "free")
+dev.off()
+
+
+#### age prev / inc ####
 
 # Apply to age estimates
 
