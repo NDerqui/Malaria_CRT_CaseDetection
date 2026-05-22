@@ -113,6 +113,60 @@ ggplot(data = plot_prev_inc,
   facet_grid(measure ~ ., scales = "free")
 dev.off()
 
+# Get prevalence estimates as if by a cross sectional survey 
+# (imp, cross surveys passed as year measure, i.e. 6 month = 0.5 year)
+
+# Get incidence estimates as if by visits
+
+estimates_control_prev_survey <- infections_control %>%
+  get_prev_survey(trial_start = trial_start, cross_surveys = seq(0.5, 6, 0.5)) %>% # Surveys every 6 months
+  mutate(run = "Prevalence Survey")
+estimates_bednet_prev_survey <- infections_bednet %>%
+  get_prev_survey(trial_start = trial_start, cross_surveys = seq(0.5, 6, 0.5)) %>% # Surveys every 6 months
+  mutate(run = "Prevalence Survey")
+
+plot_prev_survey <- rbind(estimates_control_prev_survey, estimates_bednet_prev_survey) %>%
+  select(-c(n, infections, cases)) %>%
+  pivot_longer(-c(timestep, run), names_to = "measure", values_to = "value") %>%
+  mutate(measure = factor(measure,
+                          levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
+                          labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
+
+estimates_control_inc_survey <- infections_control %>%
+  get_inc_survey(trial_start = trial_start,
+                routine_visits = seq(4, 6*52, 4), # Surveys every 2 weeks
+                days_catchment = 2) %>%           # Cases appearing in last 48 h
+  mutate(run = "Incidence Routine Visits")
+estimates_bednet_inc_survey <- infections_bednet %>%
+  get_inc_survey(trial_start = trial_start,
+                 routine_visits = seq(4, 6*52, 4), # Surveys every 2 weeks
+                 days_catchment = 2) %>%           # Cases appearing in last 48 h
+  mutate(run = "Incidence Routine Visits")
+
+plot_inc_survey <- rbind(estimates_control_inc_survey, estimates_bednet_inc_survey) %>%
+  select(-c(n, at_risk, new_infections, new_cases)) %>%
+  pivot_longer(-c(timestep, run), names_to = "measure", values_to = "value") %>%
+  mutate(measure = factor(measure,
+                          levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
+                          labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
+
+ggplot(data = plot_prev_inc,
+       aes(x = timestep, y = value, group = run, color = run)) +
+  geom_point(alpha = 0.75) + geom_line(alpha = 0.75) +
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  geom_point(data = plot_prev_survey, size = 3,
+             aes(x = timestep, y = value, group = run, color = run)) +
+  geom_point(data = plot_inc_survey, size = 3,
+             aes(x = timestep, y = value, group = run, color = run)) +
+  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10, 3, 8)],
+                     breaks = c("Control", "Intervention", "Prevalence Survey", "Incidence Routine Visits")) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  labs(x = "Year", y = NULL,
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
+  facet_grid(measure ~ ., scales = "free")
+
 # Apply to age estimates
 
 estimates_control_by_age <- infections_control %>%
