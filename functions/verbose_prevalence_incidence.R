@@ -247,3 +247,67 @@ get_inc_survey <- function(df, routine_visits, trial_start, days_catchment) {
   
   return(result)
 }
+
+
+# AGGREGATED INCIDENCE OVER FOLLOW-UP PERIODS
+
+# INPUT: a df with new infections or cases flagged (still one obs per time per person).
+# OUTPUT: a df with one observation per follow-up period, with incidence rates.
+
+# DESCRIPTION:
+
+# Aggregates incident infections/cases over longer follow-up windows, such as
+# 6 months or 1 year, instead of estimating incidence at each timestep.
+
+get_incidence_period <- function(df,
+                                 trial_start,
+                                 period = 0.5,
+                                 followup = NULL,
+                                 by = NULL,
+                                 infected_states = c("U", "A", "D", "Tr")) {
+
+  require(dplyr)
+
+  year <- 365
+  start_time <- trial_start * year
+  period_days <- period * year
+
+  if (is.null(followup)) {
+    end_time <- max(df$timestep, na.rm = TRUE)
+  } else {
+    end_time <- start_time + followup * year
+  }
+
+  grouping_vars <- c(by, "period")
+
+  df_period <- df %>%
+    arrange(individual_index, timestep) %>%
+    group_by(individual_index) %>%
+    mutate(prev_state = lag(state)) %>%
+    ungroup() %>%
+    filter(timestep >= start_time, timestep < end_time) %>%
+    filter(is.na(timestep_died) | timestep_died > timestep) %>%
+    mutate(
+      period = floor((timestep - start_time) / period_days) + 1,
+      period_start = start_time + (period - 1) * period_days,
+      period_end = pmin(start_time + period * period_days, end_time),
+      at_risk = !(prev_state %in% infected_states)
+    )
+
+  df_period %>%
+    group_by(across(all_of(grouping_vars))) %>%
+    summarise(
+      period_start = min(period_start),
+      period_end = max(period_end),
+      person_days_alive = n(),
+      person_days_at_risk = sum(at_risk, na.rm = TRUE),
+      n_people = n_distinct(individual_index),
+      new_infections = sum(new_infection_at_time, na.rm = TRUE),
+      new_cases = sum(new_case_at_time, na.rm = TRUE),
+      incidence_infection = new_infections / person_days_at_risk,
+      incidence_case = new_cases / person_days_at_risk,
+      incidence_infection_per_py = incidence_infection * year,
+      incidence_case_per_py = incidence_case * year,
+      .groups = "drop"
+    )
+}
