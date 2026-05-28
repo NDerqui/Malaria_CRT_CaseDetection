@@ -35,6 +35,8 @@ get_relative_effect <- function(df,
     mutate(
       effect = 1 - .data[[intervention]] / .data[[control]]
     )
+  
+  return(df)
 }
 
 
@@ -64,7 +66,7 @@ get_hazard_ratio <- function(df,
 
   arm_row <- grep(paste0("^", arm_col), rownames(fit_summary$coefficients))[1]
 
-  data.frame(
+  return(data.frame(
     outcome = event_col,
     term = rownames(fit_summary$coefficients)[arm_row],
     hazard_ratio = fit_summary$coefficients[arm_row, "exp(coef)"],
@@ -72,5 +74,5 @@ get_hazard_ratio <- function(df,
     conf_high = fit_summary$conf.int[arm_row, "upper .95"],
     p_value = fit_summary$coefficients[arm_row, "Pr(>|z|)"],
     row.names = NULL
-  )
+  ))
 }
