@@ -28,8 +28,8 @@ get_relative_effect <- function(df,
   value_col <- rlang::sym(value_col)
   arm_col <- rlang::sym(arm_col)
 
-  df %>%
-    select(all_of(c(comparison_cols, outcome_cols)), arm = !!arm_col, value = !!value_col) %>%
+  df <- df %>%
+    select(timestep, all_of(c(comparison_cols, outcome_cols)), arm = !!arm_col, value = !!value_col) %>%
     filter(arm %in% c(control, intervention)) %>%
     tidyr::pivot_wider(names_from = arm, values_from = value) %>%
     mutate(
