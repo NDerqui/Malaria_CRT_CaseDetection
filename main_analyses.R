@@ -147,6 +147,22 @@ ggplot(data = prev_ic_effect %>% pivot_longer(-timestep, names_to = "measure", v
   facet_grid(measure ~ ., scales = "free")
 dev.off()
 
+# With new functions
+
+source("functions/verbose_effect_size.R")
+
+get_relative_effect(df = plot_prev_inc) %>%
+  ggplot(aes(x = timestep, y = effect)) +
+  geom_point() + geom_line() +
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year", y = NULL,
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
+  facet_grid(measure ~ ., scales = "free")
+
 
 #### with cross-sectional surveys ####
 
