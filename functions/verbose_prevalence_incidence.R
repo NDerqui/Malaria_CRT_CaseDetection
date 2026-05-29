@@ -251,35 +251,46 @@ get_inc_survey <- function(df, routine_visits, trial_start, days_catchment) {
 
 # AGGREGATED INCIDENCE OVER FOLLOW-UP PERIODS
 
-# INPUT: a df with new infections or cases flagged (still one obs per time per person).
-# OUTPUT: a df with one observation per follow-up period, with incidence rates.
-
-# DESCRIPTION:
+# Main diff: instead each timestep, each row will represent aggregate new infections in a period
 
 # Aggregates incident infections/cases over longer follow-up windows, such as
 # 6 months or 1 year, instead of estimating incidence at each timestep.
 
-get_incidence_period <- function(df,
-                                 trial_start,
-                                 period = 0.5,
-                                 followup = NULL,
-                                 by = NULL,
+get_incidence_period <- function(df, trial_start,
+                                 followup_period_months = 0.5,
+                                 followup_end = max(df$timestep, na.rm = TRUE),
                                  infected_states = c("U", "A", "D", "Tr")) {
 
   require(dplyr)
 
   year <- 365
-  start_time <- trial_start * year
-  period_days <- period * year
+  
+  # Define how many periods we will have considering length:
+  
+  number_periods <- (followup_end - trial_start*year) / (followup_period_months*year)
 
-  if (is.null(followup)) {
-    end_time <- max(df$timestep, na.rm = TRUE)
-  } else {
-    end_time <- start_time + followup * year
-  }
-
-  grouping_vars <- c(by, "period")
-
+  periods <- data.frame(period = 1:number_periods,
+                        period_label = paste0(
+                          seq(0, by = followup_period_months*12, length.out = number_periods),
+                          "-",
+                          seq(followup_period_months*12, by = followup_period_months*12, length.out = number_periods),
+                          " months"
+                        ))
+  
+  # Identifying to which period does each timestep belong to
+  
+  followup_period_days <- followup_period_months * year
+  
+  df <- df %>%
+    # Only follow up from trial start
+    filter(timestep >= trial_start*year) %>%
+    # Getting period for each timestep
+    mutate(
+      period = floor((timestep - trial_start*year)/followup_period_days) + 1 # Add 1 so periods not start at zero
+    ) %>% merge(periods)
+  
+  # Now get aggregated incidence for each period
+  
   df_period <- df %>%
     arrange(individual_index, timestep) %>%
     group_by(individual_index) %>%
@@ -288,9 +299,9 @@ get_incidence_period <- function(df,
     filter(timestep >= start_time, timestep < end_time) %>%
     filter(is.na(timestep_died) | timestep_died > timestep) %>%
     mutate(
-      period = floor((timestep - start_time) / period_days) + 1,
-      period_start = start_time + (period - 1) * period_days,
-      period_end = pmin(start_time + period * period_days, end_time),
+      period = floor((timestep - start_time) / followup_period_days) + 1,
+      period_start = start_time + (period - 1) * followup_period_days,
+      period_end = pmin(start_time + period * followup_period_days, end_time),
       at_risk = !(prev_state %in% infected_states)
     )
 
