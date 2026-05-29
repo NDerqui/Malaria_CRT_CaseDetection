@@ -48,7 +48,7 @@ get_prev_inc <- function(df) {
     mutate(incidence_infec = new_infections/at_risk) %>%
     mutate(incidence_case = new_cases/at_risk) %>%
     # Cleaning
-    group_by(timestep) %>% filter(row_number() == 1) %>% ungroup() %>%
+    filter(row_number() == 1) %>% ungroup() %>%
     select(timestep, n, at_risk,
            infections, cases, new_infections, new_cases,
            prevalence_infec, prevalence_case, incidence_infec, incidence_case)
@@ -248,8 +248,7 @@ get_inc_survey <- function(df, routine_visits, trial_start, days_catchment) {
 
 get_incidence_period <- function(df, trial_start,
                                  followup_period_months = 0.5,
-                                 followup_end = max(df$timestep, na.rm = TRUE),
-                                 infected_states = c("U", "A", "D", "Tr")) {
+                                 followup_end = max(df$timestep, na.rm = TRUE)) {
 
   require(dplyr)
 
@@ -279,36 +278,37 @@ get_incidence_period <- function(df, trial_start,
       period = floor((timestep - trial_start*year)/followup_period_days) + 1 # Add 1 so periods not start at zero
     ) %>% merge(periods)
   
-  # Now get aggregated incidence for each period
+  # Prepare data once before grouped calcs
+  # then get aggregated incidence for each period
   
-  df_period <- df %>%
+  result <- df %>%
+    # To ensure timings of transitions come okay...
     arrange(individual_index, timestep) %>%
+    ## Get no. at risk in this timestep considering prev timstep:
+    # To later get no. at risk, get the state at our prior timestep.
+    # No at risk of incident infection won't include infected in previous timestep.
+    filter(timestep %in% (timesteps[time] - 1):timesteps[time]) %>% # No need to get lag for all the df
     group_by(individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
-    filter(timestep >= start_time, timestep < end_time) %>%
-    filter(is.na(timestep_died) | timestep_died > timestep) %>%
-    mutate(
-      period = floor((timestep - start_time) / followup_period_days) + 1,
-      period_start = start_time + (period - 1) * followup_period_days,
-      period_end = pmin(start_time + period * followup_period_days, end_time),
-      at_risk = !(prev_state %in% infected_states)
-    )
+    ## Ready for the each period calcs
+    # Filter to each timestep and remove everyone dead by then (for denom)
+    group_by(period) %>%
+    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+    # Get some basic counts
+    mutate(n = n()) %>%
+    mutate(person_days_at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
+    mutate(new_infections = sum(new_infection_at_time)) %>%
+    mutate(new_cases = sum(new_case_at_time)) %>%
+    # Incidence 
+    mutate(incidence_infec = new_infections/person_days_at_risk) %>%
+    mutate(incidence_case = new_cases/person_days_at_risk) %>%
+    # Cleaning
+    filter(row_number() == 1) %>% ungroup() %>%
+    select(period, period_label, n, person_days_at_risk,
+           new_infections, new_cases,
+           incidence_infec, incidence_case)
+  
+  return(result)
 
-  df_period %>%
-    group_by(across(all_of(grouping_vars))) %>%
-    summarise(
-      period_start = min(period_start),
-      period_end = max(period_end),
-      person_days_alive = n(),
-      person_days_at_risk = sum(at_risk, na.rm = TRUE),
-      n_people = n_distinct(individual_index),
-      new_infections = sum(new_infection_at_time, na.rm = TRUE),
-      new_cases = sum(new_case_at_time, na.rm = TRUE),
-      incidence_infection = new_infections / person_days_at_risk,
-      incidence_case = new_cases / person_days_at_risk,
-      incidence_infection_per_py = incidence_infection * year,
-      incidence_case_per_py = incidence_case * year,
-      .groups = "drop"
-    )
 }
