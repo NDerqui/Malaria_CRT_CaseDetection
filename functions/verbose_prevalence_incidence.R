@@ -178,7 +178,7 @@ aggregate_incidence_period <- function(df, trial_start,
 
 ### ONLY FOR SELECTED TIMESTEPS (CROSS-SECTIONAL SURVEYS or ROUTINE VISITS)
 
-survey_prevalence <- function(df, cross_surveys_in_year, trial_start) {
+survey_prevalence <- function(df, cross_surveys_in_years, trial_start) {
   
   require(dplyr)
   year <- 365
@@ -188,7 +188,7 @@ survey_prevalence <- function(df, cross_surveys_in_year, trial_start) {
   
   # IMP: cross surveys passed as year measure, i.e. 6 month = 0.5 year
   
-  cross_survey_times <- (trial_start + cross_surveys_in_year)*year
+  cross_survey_times <- (trial_start + cross_surveys_in_years)*year
   
   df <- df %>%
     filter(timestep %in% cross_survey_times)
