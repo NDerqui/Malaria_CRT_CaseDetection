@@ -5,14 +5,11 @@
 
 # DESCRIPTION:
 
-# Functions to get:
+# Function to get:
 # infection prevalence at each timestep (infected at timestep/population),
 # infection incidence at each timestep (newly infected at timestep/population at risk),
 # case prevalence at each timestep (case at timestep/population),
 # case incidence at each timestep (newly clinical case at timestep/population at risk).
-
-# Option to get them for all timepoints (above),
-# or preva/incidence as captured by a cross-sectional survey (specific timeoints).
 
 true_realtime_measures <- function(df) {
   
@@ -37,7 +34,7 @@ true_realtime_measures <- function(df) {
     filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
     # Get some basic counts
     mutate(n = n()) %>%
-    mutate(at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
+    mutate(person_days_at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
     mutate(infections = sum(infected_at_time)) %>%
     mutate(cases = sum(case_at_time)) %>%
     mutate(new_infections = sum(new_infection_at_time)) %>%
@@ -45,12 +42,12 @@ true_realtime_measures <- function(df) {
     # Incidence and Prevalence calcs
     mutate(prevalence_infection = infections/n) %>%
     mutate(prevalence_case = cases/n) %>%
-    mutate(incidence_infection = new_infections/at_risk) %>%
-    mutate(incidence_case = new_cases/at_risk) %>%
+    mutate(incidence_infection = new_infections/person_days_at_risk) %>%
+    mutate(incidence_case = new_cases/person_days_at_risk) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     mutate(type_measure = "True Instantaneous") %>%
-    select(timestep, type_measure, n, at_risk,
+    select(timestep, type_measure, n, person_days_at_risk,
            infections, cases, new_infections, new_cases,
            prevalence_infection, prevalence_case, incidence_infection, incidence_case)
   
@@ -82,7 +79,7 @@ true_realtime_measures_by_age <- function(df) {
     filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
     # Get some basic counts
     mutate(n = n()) %>%
-    mutate(at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
+    mutate(person_days_at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
     mutate(infections = sum(infected_at_time)) %>%
     mutate(cases = sum(case_at_time)) %>%
     mutate(new_infections = sum(new_infection_at_time)) %>%
@@ -90,20 +87,96 @@ true_realtime_measures_by_age <- function(df) {
     # Incidence and Prevalence calcs
     mutate(prevalence_infection = infections/n) %>%
     mutate(prevalence_case = cases/n) %>%
-    mutate(incidence_infection = new_infections/at_risk) %>%
-    mutate(incidence_case = new_cases/at_risk) %>%
+    mutate(incidence_infection = new_infections/person_days_at_risk) %>%
+    mutate(incidence_case = new_cases/person_days_at_risk) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     mutate(type_measure = "True Instantaneous") %>%
-    select(timestep, type_measure, age_at_time_year, n, at_risk,
+    select(timestep, type_measure, age_at_time_year, n, person_days_at_risk,
            infections, cases, new_infections, new_cases,
            prevalence_infection, prevalence_case, incidence_infection, incidence_case)
   
   return(result)
 }
 
+# AGGREGATED INCIDENCE OVER FOLLOW-UP PERIODS
+# Main diff: instead each timestep, each row will represent aggregate new infections in a period
 
-# ONLY FOR SELECTED TIMESTEPS (CROSS-SECTIONAL SURVEYS)
+# Aggregates incident infections/cases over longer follow-up windows, such as
+# 6 months or 1 year, instead of estimating incidence at each timestep.
+
+aggregate_incidence_period <- function(df, trial_start,
+                                       followup_period_year = 1,
+                                       followup_end = max(df$timestep, na.rm = TRUE)) {
+  
+  require(dplyr)
+  year <- 365
+  
+  # Define how many periods we will have considering length of followup_period:
+  
+  number_periods <- (followup_end - trial_start*year) / (followup_period_year*year)
+  
+  periods <- data.frame(period = 1:number_periods,
+                        period_label = paste0(
+                          seq(0, by = followup_period_year*12, length.out = number_periods),
+                          "-",
+                          seq(followup_period_year*12, by = followup_period_year*12, length.out = number_periods),
+                          " months"
+                        ))
+  
+  # Identifying to which period does each timestep belong to
+  
+  followup_period_days <- followup_period_year * year
+  
+  df <- df %>%
+    # Only follow up from trial start
+    filter(timestep >= trial_start*year) %>%
+    # Getting period for each timestep
+    mutate(
+      period = floor((timestep - trial_start*year)/followup_period_days) + 1 # Add 1 so periods not start at zero
+    ) %>% merge(periods)
+  
+  # Prepare data once before grouped calcs
+  # then get aggregated incidence for each period
+  
+  result <- df %>%
+    # To ensure timings of transitions come okay...
+    arrange(individual_index, timestep) %>%
+    ## Get no. at risk in this timestep considering prev timstep:
+    # To later get no. at risk, get the state at our prior timestep.
+    # No at risk of incident infection won't include infected in previous timestep.
+    filter(timestep %in% (timesteps[time] - 1):timesteps[time]) %>% # No need to get lag for all the df
+    group_by(individual_index) %>%
+    mutate(prev_state = lag(state)) %>%
+    ungroup() %>%
+    ## Ready for the each period calcs
+    # Filter to each timestep and remove everyone dead by then (for denom)
+    group_by(period) %>%
+    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+    # Get some basic counts
+    mutate(n = n()) %>%
+    mutate(person_days_at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
+    mutate(new_infections = sum(new_infection_at_time)) %>%
+    mutate(new_cases = sum(new_case_at_time)) %>%
+    # Incidence 
+    mutate(incidence_infection = new_infections/person_days_at_risk) %>%
+    mutate(incidence_case = new_cases/person_days_at_risk) %>%
+    # Get the last timestep of each period to plot
+    mutate(timestep = max(timestep)) %>%
+    # Cleaning
+    filter(row_number() == 1) %>% ungroup() %>%
+    mutate(type_measure = paste0("Aggregate over ", followup_period_year*year, " mos.")) %>%
+    select(timestep, type_measure, period, period_label,
+           n, person_days_at_risk,
+           new_infections, new_cases,
+           incidence_infection, incidence_case)
+  
+  return(result)
+  
+}
+
+
+### ONLY FOR SELECTED TIMESTEPS (CROSS-SECTIONAL SURVEYS or ROUTINE VISITS)
 
 get_prev_survey <- function(df, cross_surveys, trial_start) {
   
@@ -196,91 +269,18 @@ get_inc_survey <- function(df, routine_visits, trial_start, days_catchment) {
     filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
     # Get some basic counts
     mutate(n = n()) %>%
-    mutate(at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
-    mutate(new_infections = sum(new_infection_at_time)) %>%
-    mutate(new_cases = sum(new_case_at_time)) %>%
-    # Incidence and Prevalence calcs
-    mutate(incidence_infection = new_infections/at_risk) %>%
-    mutate(incidence_case = new_cases/at_risk) %>%
-    # Cleaning
-    filter(row_number() == 1) %>% ungroup() %>%
-    select(timestep, n, at_risk, new_infections, new_cases,
-           incidence_infection, incidence_case)
-  
-  return(result)
-}
-
-
-# AGGREGATED INCIDENCE OVER FOLLOW-UP PERIODS
-
-# Main diff: instead each timestep, each row will represent aggregate new infections in a period
-
-# Aggregates incident infections/cases over longer follow-up windows, such as
-# 6 months or 1 year, instead of estimating incidence at each timestep.
-
-get_incidence_period <- function(df, trial_start,
-                                 followup_period_months = 0.5,
-                                 followup_end = max(df$timestep, na.rm = TRUE)) {
-
-  require(dplyr)
-
-  year <- 365
-  
-  # Define how many periods we will have considering length:
-  
-  number_periods <- (followup_end - trial_start*year) / (followup_period_months*year)
-
-  periods <- data.frame(period = 1:number_periods,
-                        period_label = paste0(
-                          seq(0, by = followup_period_months*12, length.out = number_periods),
-                          "-",
-                          seq(followup_period_months*12, by = followup_period_months*12, length.out = number_periods),
-                          " months"
-                        ))
-  
-  # Identifying to which period does each timestep belong to
-  
-  followup_period_days <- followup_period_months * year
-  
-  df <- df %>%
-    # Only follow up from trial start
-    filter(timestep >= trial_start*year) %>%
-    # Getting period for each timestep
-    mutate(
-      period = floor((timestep - trial_start*year)/followup_period_days) + 1 # Add 1 so periods not start at zero
-    ) %>% merge(periods)
-  
-  # Prepare data once before grouped calcs
-  # then get aggregated incidence for each period
-  
-  result <- df %>%
-    # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
-    ## Get no. at risk in this timestep considering prev timstep:
-    # To later get no. at risk, get the state at our prior timestep.
-    # No at risk of incident infection won't include infected in previous timestep.
-    filter(timestep %in% (timesteps[time] - 1):timesteps[time]) %>% # No need to get lag for all the df
-    group_by(individual_index) %>%
-    mutate(prev_state = lag(state)) %>%
-    ungroup() %>%
-    ## Ready for the each period calcs
-    # Filter to each timestep and remove everyone dead by then (for denom)
-    group_by(period) %>%
-    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
-    # Get some basic counts
-    mutate(n = n()) %>%
     mutate(person_days_at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
     mutate(new_infections = sum(new_infection_at_time)) %>%
     mutate(new_cases = sum(new_case_at_time)) %>%
-    # Incidence 
+    # Incidence and Prevalence calcs
     mutate(incidence_infection = new_infections/person_days_at_risk) %>%
     mutate(incidence_case = new_cases/person_days_at_risk) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
-    select(period, period_label, n, person_days_at_risk,
-           new_infections, new_cases,
+    select(timestep, n, person_days_at_risk, new_infections, new_cases,
            incidence_infection, incidence_case)
   
   return(result)
-
 }
+
+
