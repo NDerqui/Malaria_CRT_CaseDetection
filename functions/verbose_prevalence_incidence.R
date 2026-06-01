@@ -118,35 +118,27 @@ get_prev_survey <- function(df, cross_surveys, trial_start) {
   df <- df %>%
     filter(timestep %in% cross_survey_times)
   
-  # Prepare to iter over all timesteps
+  # Prepare data once before grouped calcs
+  # then get prevalence each timestep
   
-  timesteps <- unique(df$timestep)
-  result <- data.frame()
-  
-  # Loop over all timesteps to get prevalence and incidence at each timstep
-  
-  for (time in 1:length(timesteps)) {
-    
-    add <- df %>%
-      ## Ready for the each timestep calcs
-      # Filter to each timestep and remove everyone dead by then (for denom)
-      filter(timestep == timesteps[time]) %>%
-      filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
-      # Get some basic counts
-      mutate(n = n()) %>%
-      mutate(infections = sum(infected_at_time)) %>%
-      mutate(cases = sum(case_at_time)) %>%
-      # Incidence and Prevalence calcs
-      mutate(prevalence_infec = infections/n) %>%
-      mutate(prevalence_case = cases/n) %>%
-      # Cleaning
-      group_by(timestep) %>% filter(row_number() == 1) %>% ungroup() %>%
-      select(timestep, n,
-             infections, cases, prevalence_infec, prevalence_case)
-    
-    result <- rbind(result, add)
-    rm(add)
-  }
+  result <- df %>%
+    # To ensure timings of transitions come okay...
+    arrange(individual_index, timestep) %>%
+    ## Ready for the each timestep calcs
+    # Filter to each timestep and remove everyone dead by then (for denom)
+    group_by(timestep) %>%
+    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+    # Get some basic counts
+    mutate(n = n()) %>%
+    mutate(infections = sum(infected_at_time)) %>%
+    mutate(cases = sum(case_at_time)) %>%
+    # Incidence and Prevalence calcs
+    mutate(prevalence_infec = infections/n) %>%
+    mutate(prevalence_case = cases/n) %>%
+    # Cleaning
+    filter(row_number() == 1) %>% ungroup() %>%
+    select(timestep, n,
+           infections, cases, prevalence_infec, prevalence_case)
   
   return(result)
 }
@@ -190,36 +182,28 @@ get_inc_survey <- function(df, routine_visits, trial_start, days_catchment) {
     filter(timestep %in% routine_visits_timesteps) %>%
     merge(time_eq) %>% select(-timestep) %>% rename(timestep = timestep_agg)
   
-  # Prepare to iter over all timesteps
+  # Prepare data once before grouped calcs
+  # then get prevalence each timestep
   
-  timesteps <- unique(df$timestep)
-  result <- data.frame()
-  
-  # Loop over all timesteps to get prevalence and incidence at each timstep
-  
-  for (time in 1:length(timesteps)) {
-    
-    add <- df %>%
-      ## Ready for the each timestep calcs
-      # Filter to each timestep and remove everyone dead by then (for denom)
-      filter(timestep == timesteps[time]) %>%
-      filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
-      # Get some basic counts
-      mutate(n = n()) %>%
-      mutate(at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
-      mutate(new_infections = sum(new_infection_at_time)) %>%
-      mutate(new_cases = sum(new_case_at_time)) %>%
-      # Incidence and Prevalence calcs
-      mutate(incidence_infec = new_infections/at_risk) %>%
-      mutate(incidence_case = new_cases/at_risk) %>%
-      # Cleaning
-      group_by(timestep) %>% filter(row_number() == 1) %>% ungroup() %>%
-      select(timestep, n, at_risk, new_infections, new_cases,
-             incidence_infec, incidence_case)
-    
-    result <- rbind(result, add)
-    rm(add)
-  }
+  result <- df %>%
+    # To ensure timings of transitions come okay...
+    arrange(individual_index, timestep) %>%
+    ## Ready for the each timestep calcs
+    # Filter to each timestep and remove everyone dead by then (for denom)
+    group_by(timestep) %>%
+    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+    # Get some basic counts
+    mutate(n = n()) %>%
+    mutate(at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
+    mutate(new_infections = sum(new_infection_at_time)) %>%
+    mutate(new_cases = sum(new_case_at_time)) %>%
+    # Incidence and Prevalence calcs
+    mutate(incidence_infec = new_infections/at_risk) %>%
+    mutate(incidence_case = new_cases/at_risk) %>%
+    # Cleaning
+    filter(row_number() == 1) %>% ungroup() %>%
+    select(timestep, n, at_risk, new_infections, new_cases,
+           incidence_infec, incidence_case)
   
   return(result)
 }
