@@ -114,7 +114,7 @@ aggregate_incidence_period <- function(df, trial_start,
   
   # IMP: followup period passed as year measure, i.e. 6 month = 0.5 year
   
-  number_periods <- (followup_end - trial_start*year) / (followup_period_year*year)
+  number_periods <- round((followup_end - trial_start*year) / (followup_period_year*year))
   
   periods <- data.frame(period = 1:number_periods,
                         period_label = paste0(
@@ -265,7 +265,7 @@ visits_incidence <- function(df, trial_start,
   # Define how many periods we will have considering length of followup_period.
   # IMP: followup period passed as year measure, i.e. 6 month = 0.5 year
   
-  number_periods <- (followup_end - trial_start*year) / (followup_period_year*year)
+  number_periods <- round((followup_end - trial_start*year) / (followup_period_year*year))
   
   periods <- data.frame(period = 1:number_periods,
                         period_label = paste0(
