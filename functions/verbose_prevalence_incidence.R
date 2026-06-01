@@ -14,7 +14,7 @@
 # Option to get them for all timepoints (above),
 # or preva/incidence as captured by a cross-sectional survey (specific timeoints).
 
-get_prev_inc <- function(df) {
+true_realtime_measures <- function(df) {
   
   require(dplyr)
   
@@ -49,7 +49,8 @@ get_prev_inc <- function(df) {
     mutate(incidence_case = new_cases/at_risk) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
-    select(timestep, n, at_risk,
+    mutate(type_measure = "True Instantaneous") %>%
+    select(timestep, type_measure, n, at_risk,
            infections, cases, new_infections, new_cases,
            prevalence_infec, prevalence_case, incidence_infec, incidence_case)
   
@@ -58,7 +59,7 @@ get_prev_inc <- function(df) {
 
 # Same as above adding age group
 
-get_prev_inc_by_age <- function(df) {
+true_realtime_measures_by_age <- function(df) {
   
   require(dplyr)
   
@@ -93,7 +94,8 @@ get_prev_inc_by_age <- function(df) {
     mutate(incidence_case = new_cases/at_risk) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
-    select(timestep, age_at_time_year, n, at_risk,
+    mutate(type_measure = "True Instantaneous") %>%
+    select(timestep, type_measure, age_at_time_year, n, at_risk,
            infections, cases, new_infections, new_cases,
            prevalence_infec, prevalence_case, incidence_infec, incidence_case)
   
