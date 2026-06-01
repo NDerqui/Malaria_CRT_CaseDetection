@@ -24,14 +24,13 @@ true_realtime_measures <- function(df) {
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    filter(timestep %in% (timesteps[time] - 1):timesteps[time]) %>% # No need to get lag for all the df
     group_by(individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each timestep calcs
     # Filter to each timestep and remove everyone dead by then (for denom)
     group_by(timestep) %>%
-    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+    filter(is.na(timestep_died) | timestep_died > timestep) %>%
     # Get some basic counts
     mutate(n = n()) %>%
     mutate(person_days_at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
@@ -69,14 +68,13 @@ true_realtime_measures_by_age <- function(df) {
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    filter(timestep %in% (timesteps[time] - 1):timesteps[time]) %>% # No need to get lag for all the df
     group_by(individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each timestep calcs
     # Filter to each timestep and remove everyone dead by then (for denom)
     group_by(timestep, age_at_time_year) %>%
-    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+    filter(is.na(timestep_died) | timestep_died > timestep) %>%
     # Get some basic counts
     mutate(n = n()) %>%
     mutate(person_days_at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
@@ -147,14 +145,13 @@ aggregate_incidence_period <- function(df, trial_start,
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    filter(timestep %in% (timesteps[time] - 1):timesteps[time]) %>% # No need to get lag for all the df
     group_by(individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each period calcs
     # Filter to each timestep and remove everyone dead by then (for denom)
     group_by(period) %>%
-    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+    filter(is.na(timestep_died) | timestep_died > timestep) %>%
     # Get some basic counts
     mutate(n = n()) %>%
     mutate(person_days_at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
@@ -204,7 +201,7 @@ survey_prevalence <- function(df, cross_surveys_in_years, trial_start) {
     ## Ready for the each timestep calcs
     # Filter to each timestep and remove everyone dead by then (for denom)
     group_by(timestep) %>%
-    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+    filter(is.na(timestep_died) | timestep_died > timestep) %>%
     # Get some basic counts
     mutate(n = n()) %>%
     mutate(infections = sum(infected_at_time)) %>%
@@ -299,14 +296,13 @@ visits_incidence <- function(df, trial_start,
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    filter(timestep %in% (timesteps[time] - 1):timesteps[time]) %>% # No need to get lag for all the df
     group_by(individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each period calcs
     # Filter to each timestep and remove everyone dead by then (for denom)
     group_by(period) %>%
-    filter(is.na(timestep_died) | timestep_died > timesteps[time]) %>%
+    filter(is.na(timestep_died) | timestep_died > timestep) %>%
     # Get some basic counts
     mutate(n = n()) %>%
     mutate(person_days_at_risk = sum(!(prev_state %in% c("U", "A", "D", "Tr")))) %>%
