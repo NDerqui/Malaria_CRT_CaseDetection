@@ -218,7 +218,7 @@ protective_effect <- get_relative_effect(df = plot_all_estimates)
 write.csv(protective_effect, row.names = FALSE,
           file = paste0("outputs_effect_size/protective_effect_", gsub(" ", "_", tolower(trial_name)), ".csv"))
 
-png(filename = paste0("outputs_plots/prevalence_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_plots/protective_effect_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = filter(protective_effect, !is.na(effect) &
                        !(type_measure == "True Instantaneous" & grepl("Incidence", measure))),
