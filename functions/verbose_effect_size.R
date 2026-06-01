@@ -21,6 +21,7 @@ wrap_for_plot_effect <- function(df,
   {
   
   require(dplyr)
+  require(tidyr)
   
   df <- df %>%
     select(-any_of(c("n", "person_days_at_risk", "infections", "cases",
