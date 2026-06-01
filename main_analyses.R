@@ -139,10 +139,11 @@ write.csv(estimates_all, row.names = FALSE,
 
 #### quick vis ####
 
-plot_all_estimates <- estimates_all %>%
-  select(-c(n, person_days_at_risk, infections, cases, new_infections, new_cases, period, period_label)) %>%
-  pivot_longer(-c(timestep, type_measure, run), names_to = "measure", values_to = "value") %>%
-  mutate(measure = factor(measure, levels = measures, labels = measures_labels))
+source("functions/verbose_effect_size.R")
+
+# Wrap up function (useful for effect estimate later)
+
+plot_all_estimates <- wrap_for_plot_effect(estimates_all)
 
 require(rcartocolor)
 require(ggh4x)
@@ -210,8 +211,9 @@ source("functions/verbose_effect_size.R")
 # Get the protective effect of our intervention,
 # comparing incidence and prevalence
 
+plot_all_estimates <- wrap_for_plot_effect(estimates_all)
+
 protective_effect <- get_relative_effect(df = plot_all_estimates)
-protective_effect$effect <- as.numeric(protective_effect$effect)
 
 write.csv(protective_effect, row.names = FALSE,
           file = paste0("outputs_effect_size/protective_effect_", gsub(" ", "_", tolower(trial_name)), ".csv"))
@@ -230,6 +232,10 @@ ggplot(data = filter(protective_effect, !is.na(effect)),
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_nested(type_measure + measure ~ ., scales = "free")
 dev.off()
+
+
+#### toying ####
+
 
 
 

@@ -52,7 +52,8 @@ get_relative_effect <- function(df,
     tidyr::pivot_wider(names_from = arm, values_from = value) %>%
     mutate(
       effect = 1 - .data[[intervention]] / .data[[control]]
-    )
+    ) %>%
+    mutate(effect = as.numeric(effect))
   
   return(result)
 }
