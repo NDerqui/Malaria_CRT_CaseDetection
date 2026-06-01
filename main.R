@@ -42,7 +42,7 @@ month <- 30
 init_EIR <- 1
 
 human_population <- 10000
-trial_size <- 100
+trial_size <- 500
 
 # Set some basics, like length of sim vs length of trial,
 # and when do our interventions start.
