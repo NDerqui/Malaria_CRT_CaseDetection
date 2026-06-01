@@ -75,6 +75,9 @@ infections_bednet <- analyses_cohort_bednet %>%
 
 #### incidence/prevalence ####
 
+measures <- c("prevalence_infection", "prevalence_case", "incidence_infection", "incidence_case")
+measures_labels <- c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")
+
 ## Functions to get incidence/prevalence at each timestep
 
 source("functions/verbose_prevalence_incidence.R")
@@ -82,19 +85,19 @@ source("functions/verbose_prevalence_incidence.R")
 # Apply
 
 estimates_control <- infections_control %>%
-  get_prev_inc() %>% mutate(run = "Control")
+  true_realtime_measures() %>% mutate(run = "Control")
 
 estimates_bednet <- infections_bednet %>%
-  get_prev_inc() %>% mutate(run = "Intervention")
+  true_realtime_measures() %>% mutate(run = "Intervention")
 
 # Quick vis
 
 plot_prev_inc <- rbind(estimates_control, estimates_bednet) %>%
-  select(-c(n, at_risk, infections, cases, new_infections, new_cases)) %>%
-  pivot_longer(-c(timestep, run), names_to = "measure", values_to = "value") %>%
+  select(-c(n, person_days_at_risk, infections, cases, new_infections, new_cases)) %>%
+  pivot_longer(-c(timestep, type_measure, run), names_to = "measure", values_to = "value") %>%
   mutate(measure = factor(measure,
-                          levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
-                          labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
+                          levels = measures,
+                          labels = measures_labels))
 
 require(rcartocolor)
 
@@ -110,7 +113,7 @@ ggplot(data = plot_prev_inc,
   labs(x = "Year", y = NULL,
        title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
-  facet_grid(measure ~ ., scales = "free")
+  facet_grid(type_measure*measure ~ ., scales = "free")
 dev.off()
 
 # Save estimates with effect size
