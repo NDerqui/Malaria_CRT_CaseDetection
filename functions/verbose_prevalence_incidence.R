@@ -291,14 +291,6 @@ visits_incidence <- function(df, trial_start,
   # then get aggregated incidence for each period
   
   result <- df %>%
-    # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
-    ## Get no. at risk in this timestep considering prev timstep:
-    # To later get no. at risk, get the state at our prior timestep.
-    # No at risk of incident infection won't include infected in previous timestep.
-    group_by(individual_index) %>%
-    mutate(prev_state = lag(state)) %>%
-    ungroup() %>%
     ## Ready for the each period calcs
     # Filter to each timestep and remove everyone dead by then (for denom)
     group_by(period) %>%
