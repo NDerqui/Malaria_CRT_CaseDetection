@@ -220,7 +220,8 @@ write.csv(protective_effect, row.names = FALSE,
 
 png(filename = paste0("outputs_plots/prevalence_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
-ggplot(data = filter(protective_effect, !is.na(effect)),
+ggplot(data = filter(protective_effect, !is.na(effect) &
+                       !(type_measure == "True Instantaneous" & grepl("Incidence", measure))),
        aes(x = timestep, y = effect)) +
   geom_point() + geom_line() +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
@@ -236,9 +237,69 @@ dev.off()
 
 #### toying ####
 
+# Modify parameters in function
 
+results <- data.frame()
+cross_surveys <- c(0.25,0.5, 0.75, 1)
+visits <- c(2, 4, 6, 8)
 
+for (test in 1:length(cross_surveys)) {
+  
+  # Iter over prevalence surveys
+  
+  control <- infections_control %>%
+    survey_prevalence(trial_start = trial_start,
+                      cross_surveys_in_years = seq(cross_surveys[test], 6, cross_surveys[test])) %>%
+    mutate(run = "Control")
+  bednet <- infections_bednet %>%
+    survey_prevalence(trial_start = trial_start,
+                      cross_surveys_in_years = seq(cross_surveys[test], 6, cross_surveys[test])) %>%
+    mutate(run = "Intervention")
+  
+  prevalence <- rbind(control, bednet) %>%
+    wrap_for_plot_effect() %>% get_relative_effect() %>%
+    mutate(var = paste0(cross_surveys[test]*12, " months"))
+  
+  # Iter over incidence visits
+  
+  control <- infections_control %>%
+    visits_incidence(trial_start = trial_start,
+                     routine_visits_in_weeks = seq(visits[test], 6*52, visits[test]),
+                     days_catchment = 2) %>%
+    mutate(run = "Control")
+  bednet <- infections_bednet %>%
+    visits_incidence(trial_start = trial_start,
+                     routine_visits_in_weeks = seq(visits[test], 6*52, visits[test]),
+                     days_catchment = 2) %>%
+    mutate(run = "Intervention")
+  
+  incidence <- rbind(control, bednet) %>%
+    wrap_for_plot_effect() %>% get_relative_effect() %>%
+    mutate(var = paste0(visits[test], " weeks"))
+  
+  # Add to previous results
+  
+  results <- rbind(results, prevalence, incidence)
+  rm(control, bednet, prevalence, incidence)
+  
+}
+rm(test)
 
+ggplot(data = filter(results, is.numeric(effect)),
+       aes(x = timestep, y = effect, color = var)) +
+  geom_jitter(size = 3) +
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  scale_color_manual(breaks = c(paste0(cross_surveys*12, " months"),
+                                paste0(visits, " weeks")),
+                     values = c(carto_pal(name = "Safe")[c(2, 3, 8, 11)],
+                                carto_pal(name = "Safe")[c(2, 3, 8, 11)])) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent, limits = 0:1) +
+  labs(x = "Year", y = NULL,
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
+  facet_nested(type_measure + measure ~ ., scales = "free")
 
 
 
