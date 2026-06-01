@@ -133,7 +133,10 @@ aggregate_incidence_period <- function(df, trial_start,
     filter(timestep >= trial_start*year) %>%
     # Getting period for each timestep
     mutate(
-      period = floor((timestep - trial_start*year)/followup_period_days) + 1 # Add 1 so periods not start at zero
+      period = pmin(
+        floor((timestep - trial_start*year)/followup_period_days) + 1, # Add a one so that periods don't start at zero
+        number_periods # pmin so that last timestep doesn't get assigned to other period out of a bad denominator
+      )
     ) %>% merge(periods)
   
   # Prepare data once before grouped calcs
@@ -284,7 +287,10 @@ visits_incidence <- function(df, trial_start,
     filter(timestep >= trial_start*year) %>%
     # Getting period for each timestep
     mutate(
-      period = floor((timestep - trial_start*year)/followup_period_days) + 1 # Add 1 so periods not start at zero
+      period = pmin(
+        floor((timestep - trial_start*year)/followup_period_days) + 1, # Add a one so that periods don't start at zero
+        number_periods # pmin so that last timestep doesn't get assigned to other period out of a bad denominator
+      )
     ) %>% merge(periods)
   
   # Prepare data once before grouped calcs
