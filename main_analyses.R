@@ -73,7 +73,6 @@ infections_bednet <- analyses_cohort_bednet %>%
 # INCIDENCE / PREVALENCE ----------------------------------------------------------------
 
 
-#### incidence/prevalence ####
 
 measures <- c("prevalence_infection", "prevalence_case", "incidence_infection", "incidence_case")
 measures_labels <- c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")
@@ -81,6 +80,9 @@ measures_labels <- c("Infection Prevalence", "Case Prevalence", "Infection Incid
 ## Functions to get incidence/prevalence at each timestep
 
 source("functions/verbose_prevalence_incidence.R")
+
+
+#### true estimates ####
 
 # Apply
 
@@ -116,56 +118,6 @@ ggplot(data = plot_prev_inc,
   facet_grid(type_measure*measure ~ ., scales = "free")
 dev.off()
 
-# Save estimates with effect size
-
-prev_ic_effect <- plot_prev_inc %>%
-  arrange(timestep, run) %>%
-  group_by(timestep, measure) %>%
-  mutate(
-    est_control = value[run == "Control"],
-    est_intervention = value[run == "Intervention"],
-    effect = (1 - est_intervention/est_control)
-  ) %>% filter(row_number() == 1) %>%
-  ungroup() %>% select(-c(est_control, est_intervention, value, run)) %>%
-  mutate(measure = gsub(" ", "", measure)) %>%
-  mutate(effect = as.numeric(gsub("NaN", NA, effect))) %>%
-  pivot_wider(names_from = "measure", values_from = "effect") 
-
-dir.create("outputs_effect_size/", showWarnings = FALSE)
-write.csv(prev_ic_effect, row.names = FALSE,
-          file = paste0("outputs_effect_size/prev_inc_", gsub(" ", "_", tolower(trial_name)), ".csv"))
-
-png(filename = paste0("outputs_plots/effect_prev_inc_", gsub(" ", "_", tolower(trial_name)), ".png"),
-    width = 12, height = 8, units = "in", res = 1200)
-ggplot(data = prev_ic_effect %>% pivot_longer(-timestep, names_to = "measure", values_to = "value"),
-       aes(x = timestep, y = value)) +
-  geom_point() + geom_line() +
-  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                     labels = (0:sim_length)) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
-  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
-  facet_grid(measure ~ ., scales = "free")
-dev.off()
-
-# With new functions
-
-source("functions/verbose_effect_size.R")
-
-get_relative_effect(df = plot_prev_inc) %>%
-  ggplot(aes(x = timestep, y = effect)) +
-  geom_point() + geom_line() +
-  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                     labels = (0:sim_length)) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
-  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
-  facet_grid(measure ~ ., scales = "free")
-
 
 #### with cross-sectional surveys ####
 
@@ -190,8 +142,8 @@ plot_prev_survey <- rbind(estimates_control_prev_survey, estimates_bednet_prev_s
 
 estimates_control_inc_survey <- infections_control %>%
   get_inc_survey(trial_start = trial_start,
-                routine_visits = seq(4, 6*52, 4), # Surveys every 2 weeks
-                days_catchment = 2) %>%           # Cases appearing in last 48 h
+                 routine_visits = seq(4, 6*52, 4), # Surveys every 2 weeks
+                 days_catchment = 2) %>%           # Cases appearing in last 48 h
   mutate(run = "Incidence Routine Visits - Control")
 estimates_bednet_inc_survey <- infections_bednet %>%
   get_inc_survey(trial_start = trial_start,
@@ -266,40 +218,60 @@ ggplot(data = prev_ic_effect_survey %>% pivot_longer(-timestep, names_to = "meas
 dev.off()
 
 
-#### age prev / inc ####
+#### effect size ####
 
-# Apply to age estimates
+# Save estimates with effect size
 
-estimates_control_by_age <- infections_control %>%
-  get_prev_inc_by_age() %>% mutate(run = "Control")
+prev_ic_effect <- plot_prev_inc %>%
+  arrange(timestep, run) %>%
+  group_by(timestep, measure) %>%
+  mutate(
+    est_control = value[run == "Control"],
+    est_intervention = value[run == "Intervention"],
+    effect = (1 - est_intervention/est_control)
+  ) %>% filter(row_number() == 1) %>%
+  ungroup() %>% select(-c(est_control, est_intervention, value, run)) %>%
+  mutate(measure = gsub(" ", "", measure)) %>%
+  mutate(effect = as.numeric(gsub("NaN", NA, effect))) %>%
+  pivot_wider(names_from = "measure", values_from = "effect") 
 
-estimates_bednet_by_age <- infections_bednet %>%
-  get_prev_inc_by_age() %>% mutate(run = "Intervention")
+dir.create("outputs_effect_size/", showWarnings = FALSE)
+write.csv(prev_ic_effect, row.names = FALSE,
+          file = paste0("outputs_effect_size/prev_inc_", gsub(" ", "_", tolower(trial_name)), ".csv"))
 
-# Quick vis
-
-plot_prev_inc_by_age <- rbind(estimates_control_by_age, estimates_bednet_by_age) %>%
-  select(-c(n, at_risk, infections, cases, new_infections, new_cases)) %>%
-  pivot_longer(-c(timestep, age_at_time_year, run), names_to = "measure", values_to = "value") %>%
-  mutate(measure = factor(measure,
-                          levels = c("prevalence_infec", "prevalence_case", "incidence_infec", "incidence_case"),
-                          labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")))
-
-png(filename = paste0("outputs_plots/outcomes_prev_by_age_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_plots/effect_prev_inc_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
-ggplot(data = filter(plot_prev_inc_by_age, age_at_time_year %in% c(1, 2, 5, 10)),
-       aes(x = timestep, y = value, group = run, color = run)) +
+ggplot(data = prev_ic_effect %>% pivot_longer(-timestep, names_to = "measure", values_to = "value"),
+       aes(x = timestep, y = value)) +
   geom_point() + geom_line() +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent) +
   labs(x = "Year", y = NULL,
        title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
-  facet_grid(age_at_time_year ~ measure, scales = "free")
-
+  facet_grid(measure ~ ., scales = "free")
 dev.off()
+
+# With new functions
+
+source("functions/verbose_effect_size.R")
+
+get_relative_effect(df = plot_prev_inc) %>%
+  ggplot(aes(x = timestep, y = effect)) +
+  geom_point() + geom_line() +
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year", y = NULL,
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
+  facet_grid(measure ~ ., scales = "free")
+
+
+
 
 
 
