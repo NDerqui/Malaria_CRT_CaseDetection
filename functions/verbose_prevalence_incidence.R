@@ -43,16 +43,16 @@ true_realtime_measures <- function(df) {
     mutate(new_infections = sum(new_infection_at_time)) %>%
     mutate(new_cases = sum(new_case_at_time)) %>%
     # Incidence and Prevalence calcs
-    mutate(prevalence_infec = infections/n) %>%
+    mutate(prevalence_infection = infections/n) %>%
     mutate(prevalence_case = cases/n) %>%
-    mutate(incidence_infec = new_infections/at_risk) %>%
+    mutate(incidence_infection = new_infections/at_risk) %>%
     mutate(incidence_case = new_cases/at_risk) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     mutate(type_measure = "True Instantaneous") %>%
     select(timestep, type_measure, n, at_risk,
            infections, cases, new_infections, new_cases,
-           prevalence_infec, prevalence_case, incidence_infec, incidence_case)
+           prevalence_infection, prevalence_case, incidence_infection, incidence_case)
   
   return(result)
 }
@@ -88,16 +88,16 @@ true_realtime_measures_by_age <- function(df) {
     mutate(new_infections = sum(new_infection_at_time)) %>%
     mutate(new_cases = sum(new_case_at_time)) %>%
     # Incidence and Prevalence calcs
-    mutate(prevalence_infec = infections/n) %>%
+    mutate(prevalence_infection = infections/n) %>%
     mutate(prevalence_case = cases/n) %>%
-    mutate(incidence_infec = new_infections/at_risk) %>%
+    mutate(incidence_infection = new_infections/at_risk) %>%
     mutate(incidence_case = new_cases/at_risk) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     mutate(type_measure = "True Instantaneous") %>%
     select(timestep, type_measure, age_at_time_year, n, at_risk,
            infections, cases, new_infections, new_cases,
-           prevalence_infec, prevalence_case, incidence_infec, incidence_case)
+           prevalence_infection, prevalence_case, incidence_infection, incidence_case)
   
   return(result)
 }
@@ -135,12 +135,12 @@ get_prev_survey <- function(df, cross_surveys, trial_start) {
     mutate(infections = sum(infected_at_time)) %>%
     mutate(cases = sum(case_at_time)) %>%
     # Incidence and Prevalence calcs
-    mutate(prevalence_infec = infections/n) %>%
+    mutate(prevalence_infection = infections/n) %>%
     mutate(prevalence_case = cases/n) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     select(timestep, n,
-           infections, cases, prevalence_infec, prevalence_case)
+           infections, cases, prevalence_infection, prevalence_case)
   
   return(result)
 }
@@ -200,12 +200,12 @@ get_inc_survey <- function(df, routine_visits, trial_start, days_catchment) {
     mutate(new_infections = sum(new_infection_at_time)) %>%
     mutate(new_cases = sum(new_case_at_time)) %>%
     # Incidence and Prevalence calcs
-    mutate(incidence_infec = new_infections/at_risk) %>%
+    mutate(incidence_infection = new_infections/at_risk) %>%
     mutate(incidence_case = new_cases/at_risk) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     select(timestep, n, at_risk, new_infections, new_cases,
-           incidence_infec, incidence_case)
+           incidence_infection, incidence_case)
   
   return(result)
 }
@@ -273,13 +273,13 @@ get_incidence_period <- function(df, trial_start,
     mutate(new_infections = sum(new_infection_at_time)) %>%
     mutate(new_cases = sum(new_case_at_time)) %>%
     # Incidence 
-    mutate(incidence_infec = new_infections/person_days_at_risk) %>%
+    mutate(incidence_infection = new_infections/person_days_at_risk) %>%
     mutate(incidence_case = new_cases/person_days_at_risk) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     select(period, period_label, n, person_days_at_risk,
            new_infections, new_cases,
-           incidence_infec, incidence_case)
+           incidence_infection, incidence_case)
   
   return(result)
 
