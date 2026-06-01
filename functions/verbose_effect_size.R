@@ -15,7 +15,10 @@
 # (prevalence, incidence, whether true or observed by cross-sectional surveys, etc.),
 # which is useful for plotting too.
 
-wrap_for_plot_effect <- function(df) {
+wrap_for_plot_effect <- function(df,
+                                 measures <- c("prevalence_infection", "prevalence_case", "incidence_infection", "incidence_case"),
+                                 measures_labels <- c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence"))
+  {
   
   require(dplyr)
   
