@@ -126,7 +126,7 @@ aggregate_incidence_period <- function(df, trial_start,
   
   # Identifying to which period does each timestep belong to
   
-  followup_period_days <- followup_period_year * year
+  followup_period_days <- round(followup_period_year * year)
   
   df <- df %>%
     # Only follow up from trial start
@@ -187,7 +187,7 @@ survey_prevalence <- function(df, cross_surveys_in_years, trial_start) {
   
   # IMP: cross surveys passed as year measure, i.e. 6 month = 0.5 year
   
-  cross_survey_times <- (trial_start + cross_surveys_in_years)*year
+  cross_survey_times <- round((trial_start + cross_surveys_in_years)*year)
   
   df <- df %>%
     filter(timestep %in% cross_survey_times)

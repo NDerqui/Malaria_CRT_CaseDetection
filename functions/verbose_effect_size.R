@@ -20,7 +20,8 @@ wrap_for_plot_effect <- function(df) {
   require(dplyr)
   
   df <- df %>%
-    select(-c(n, person_days_at_risk, infections, cases, new_infections, new_cases, period, period_label)) %>%
+    select(-any_of(c("n", "person_days_at_risk", "infections", "cases",
+                     "new_infections", "new_cases", "period", "period_label"))) %>%
     pivot_longer(-c(timestep, type_measure, run), names_to = "measure", values_to = "value") %>%
     mutate(measure = factor(measure, levels = measures, labels = measures_labels))
   
