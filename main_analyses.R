@@ -27,7 +27,7 @@ month <- 30
 # General inputs: init_EIR, and
 # total sim size versus pop followed (analyses performed) at trial.
 
-init_EIR <- 1
+init_EIR <- 25
 
 human_population <- 10000
 trial_size <- 100
@@ -140,6 +140,7 @@ write.csv(estimates_all, row.names = FALSE,
 #### quick vis ####
 
 source("functions/verbose_effect_size.R")
+dir.create("outputs_effect_plots/", showWarnings = FALSE)
 
 # Wrap up function (useful for effect estimate later)
 
@@ -150,7 +151,7 @@ require(ggh4x)
 
 # all true estimates
 
-png(filename = paste0("outputs_plots/all_true_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_effect_plots/all_true_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = filter(plot_all_estimates, (type_measure == "True Instantaneous" | grepl("Aggr", type_measure)) & !is.na(value)),
        aes(x = timestep, y = value, group = run, color = run)) +
@@ -167,7 +168,7 @@ dev.off()
 
 # comparing incidence measurements
 
-png(filename = paste0("outputs_plots/incidence_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_effect_plots/incidence_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = filter(plot_all_estimates, grepl("Incidence", measure) & !(grepl("Cross", type_measure)) & !is.na(value)),
        aes(x = timestep, y = value, group = run, color = run)) +
@@ -184,7 +185,7 @@ dev.off()
 
 # Overlay cross-sectional
 
-png(filename = paste0("outputs_plots/prevalence_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_effect_plots/prevalence_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 5, units = "in", res = 1200)
 ggplot(data = filter(plot_all_estimates, grepl("Prevalence", measure) & !is.na(value)),
        aes(x = timestep, y = value, group = run, color = run)) +
@@ -218,7 +219,7 @@ protective_effect <- get_relative_effect(df = plot_all_estimates)
 write.csv(protective_effect, row.names = FALSE,
           file = paste0("outputs_effect_size/protective_effect_", gsub(" ", "_", tolower(trial_name)), ".csv"))
 
-png(filename = paste0("outputs_plots/protective_effect_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_effect_plots/protective_effect_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = filter(protective_effect, !is.na(effect) &
                        !(type_measure == "True Instantaneous" & grepl("Incidence", measure))),
@@ -241,7 +242,6 @@ dev.off()
 
 results <- data.frame()
 cross_surveys <- c(0.25,0.5, 0.75, 1)
-visits <- c(2, 4, 6, 8)
 
 for (test in 1:length(cross_surveys)) {
   
@@ -260,39 +260,22 @@ for (test in 1:length(cross_surveys)) {
     wrap_for_plot_effect() %>% get_relative_effect() %>%
     mutate(var = paste0(cross_surveys[test]*12, " months"))
   
-  # Iter over incidence visits
-  
-  control <- infections_control %>%
-    visits_incidence(trial_start = trial_start,
-                     routine_visits_in_weeks = seq(visits[test], 6*52, visits[test]),
-                     days_catchment = 2) %>%
-    mutate(run = "Control")
-  bednet <- infections_bednet %>%
-    visits_incidence(trial_start = trial_start,
-                     routine_visits_in_weeks = seq(visits[test], 6*52, visits[test]),
-                     days_catchment = 2) %>%
-    mutate(run = "Intervention")
-  
-  incidence <- rbind(control, bednet) %>%
-    wrap_for_plot_effect() %>% get_relative_effect() %>%
-    mutate(var = paste0(visits[test], " weeks"))
-  
   # Add to previous results
   
-  results <- rbind(results, prevalence, incidence)
-  rm(control, bednet, prevalence, incidence)
+  results <- rbind(results, prevalence)
+  rm(control, bednet, prevalence)
   
 }
 rm(test)
 
+png(filename = paste0("outputs_effect_plots/test_", gsub(" ", "_", tolower(trial_name)), ".png"),
+    width = 12, height = 5, units = "in", res = 1200)
 ggplot(data = filter(results, is.numeric(effect)),
        aes(x = timestep, y = effect, color = var)) +
   geom_jitter(size = 3) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-  scale_color_manual(breaks = c(paste0(cross_surveys*12, " months"),
-                                paste0(visits, " weeks")),
-                     values = c(carto_pal(name = "Safe")[c(2, 3, 8, 11)],
-                                carto_pal(name = "Safe")[c(2, 3, 8, 11)])) +
+  scale_color_manual(breaks = paste0(cross_surveys*12, " months"),
+                     values = carto_pal(name = "Safe")[c(2, 3, 8, 11)]) +
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
   scale_y_continuous(labels = scales::percent, limits = 0:1) +
@@ -300,6 +283,59 @@ ggplot(data = filter(results, is.numeric(effect)),
        title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_nested(type_measure + measure ~ ., scales = "free")
+dev.off()
+
+# Modify parameters in function
+
+results2 <- data.frame()
+visits <- c(2, 4, 8)
+visits_period <- c(2, 4, 7)
+
+for (test in 1:length(visits)) {
+  
+  for (test2 in 1:length(visits_period)) {
+    
+    # Iter over incidence visits
+    
+    control <- infections_control %>%
+      visits_incidence(trial_start = trial_start,
+                       routine_visits_in_weeks = seq(visits[test], 6*52, visits[test]),
+                       days_catchment = visits_period[test2]) %>%
+      mutate(run = "Control")
+    bednet <- infections_bednet %>%
+      visits_incidence(trial_start = trial_start,
+                       routine_visits_in_weeks = seq(visits[test], 6*52, visits[test]),
+                       days_catchment = visits_period[test2]) %>%
+      mutate(run = "Intervention")
+    
+    incidence <- rbind(control, bednet) %>%
+      wrap_for_plot_effect() %>% get_relative_effect() %>%
+      mutate(var = paste0(visits[test], " weeks - ", visits_period[test2], " days window"))
+    
+    # Add to previous results
+    
+    results2 <- rbind(results2, incidence)
+    rm(control, bednet, incidence)
+  }
+  
+}
+rm(test, test2)
+
+png(filename = paste0("outputs_effect_plots/test2_", gsub(" ", "_", tolower(trial_name)), ".png"),
+    width = 12, height = 5, units = "in", res = 1200)
+ggplot(data = filter(results2, is.numeric(effect)),
+       aes(x = timestep, y = effect, color = var)) +
+  geom_jitter(size = 3) +
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  scale_color_manual(values = c(carto_pal(name = "Safe")[c(9, 10, 2, 3, 8, 4, 7, 1, 11, 5, 12)], "black")) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent, limits = 0:1) +
+  labs(x = "Year", y = NULL,
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
+  facet_nested(type_measure + measure ~ ., scales = "free")
+dev.off()
 
 
 
@@ -372,7 +408,7 @@ plot_survival_b <- ggplot(data = surv_fit_1case,
   labs(x = "Year after trial start", y = "Proportion without clinical case") +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
 
-png(filename = paste0("outputs_plots/outcomes_time_to_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_effect_plots/outcomes_time_to_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 8, units = "in", res = 1200)
 annotate_figure(ggarrange(plot_survival_a, plot_survival_b, nrow = 2),
                 top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name))
@@ -449,7 +485,7 @@ plot_survival_2b <- ggplot(data = surv_fit_2case,
   labs(x = "Year after second intervention", y = "Proportion without clinical case") +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
 
-png(filename = paste0("outputs_plots/outcomes_time_to_2_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_effect_plots/outcomes_time_to_2_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 8, units = "in", res = 1200)
 annotate_figure(ggarrange(plot_survival_2a, plot_survival_2b, nrow = 2),
                 top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name))
