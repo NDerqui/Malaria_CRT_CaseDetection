@@ -4,12 +4,12 @@
 .Rproj.user/
 .Rhistory
 
-#### JW verbose file
+#### JW verbose and other output file
 
 *.csv
 
-#### Plots folder
+#### Plots 
 
+outputs_effect_plots/*
 outputs_plots/*
-outputs_plots_by_cluster/*
 .positai
