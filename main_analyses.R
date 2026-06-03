@@ -79,8 +79,12 @@ source("functions/verbose_prevalence_incidence.R")
 
 ## Factor levels for outcomes
 
-measures <- c("prevalence_infection", "prevalence_case", "incidence_infection", "incidence_case")
-measures_labels <- c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence")
+measures <- c("prevalence_infection", "prevalence_case",
+              "incidence_ppd_infection", "incidence_ppd_case",
+              "incidence_ppy_infection", "incidence_ppy_case")
+measures_labels <- c("Infection Prevalence", "Case Prevalence",
+                     "Infection Incidence p.p.day", "Case Incidence p.p.day",
+                     "Infection Incidence p.p.yea", "Case Incidence p.p.yea")
 
 
 #### all estimates ####
@@ -144,7 +148,8 @@ dir.create("outputs_effect_plots/", showWarnings = FALSE)
 
 # Wrap up function (useful for effect estimate later)
 
-plot_all_estimates <- wrap_for_plot_effect(estimates_all)
+plot_all_estimates <- wrap_for_plot_effect(estimates_all) %>%
+  filter(!is.na(value))
 
 require(rcartocolor)
 require(ggh4x)
@@ -153,7 +158,9 @@ require(ggh4x)
 
 png(filename = paste0("outputs_effect_plots/all_true_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
-ggplot(data = filter(plot_all_estimates, (type_measure == "True Instantaneous" | grepl("Aggr", type_measure)) & !is.na(value)),
+ggplot(data = filter(plot_all_estimates,
+                     (type_measure == "True Instantaneous" & grepl("Prev", measure)) |
+                       (grepl("Aggr", type_measure) & grepl("p.p.y", measure))),
        aes(x = timestep, y = value, group = run, color = run)) +
   geom_point() + geom_line() +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
@@ -170,7 +177,7 @@ dev.off()
 
 png(filename = paste0("outputs_effect_plots/incidence_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
-ggplot(data = filter(plot_all_estimates, grepl("Incidence", measure) & !(grepl("Cross", type_measure)) & !is.na(value)),
+ggplot(data = filter(plot_all_estimates, grepl("p.p.yea", measure)),
        aes(x = timestep, y = value, group = run, color = run)) +
   geom_point() + geom_line() +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
@@ -187,7 +194,7 @@ dev.off()
 
 png(filename = paste0("outputs_effect_plots/prevalence_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 5, units = "in", res = 1200)
-ggplot(data = filter(plot_all_estimates, grepl("Prevalence", measure) & !is.na(value)),
+ggplot(data = filter(plot_all_estimates, grepl("Prevalence", measure)),
        aes(x = timestep, y = value, group = run, color = run)) +
   geom_point(aes(shape = type_measure, size = type_measure)) + geom_line() +
   scale_shape_manual(breaks = c("True Instantaneous", "Cross-sectional surveys"),
@@ -222,7 +229,8 @@ write.csv(protective_effect, row.names = FALSE,
 png(filename = paste0("outputs_effect_plots/protective_effect_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = filter(protective_effect, !is.na(effect) &
-                       !(type_measure == "True Instantaneous" & grepl("Incidence", measure))),
+                       !(type_measure == "True Instantaneous" & grepl("Incidence", measure)) &
+                       (grepl("Prev", measure) | grepl("p.p.y", measure))),
        aes(x = timestep, y = effect)) +
   geom_point() + geom_line() +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
@@ -323,7 +331,7 @@ rm(test, test2)
 
 png(filename = paste0("outputs_effect_plots/test2_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 5, units = "in", res = 1200)
-ggplot(data = filter(results2, is.numeric(effect)),
+ggplot(data = filter(results2, is.numeric(effect) & grepl("p.p.ye", measure)),
        aes(x = timestep, y = effect, color = var)) +
   geom_jitter(size = 3) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +

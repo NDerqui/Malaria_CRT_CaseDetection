@@ -16,8 +16,12 @@
 # which is useful for plotting too.
 
 wrap_for_plot_effect <- function(df,
-                                 measures = c("prevalence_infection", "prevalence_case", "incidence_infection", "incidence_case"),
-                                 measures_labels = c("Infection Prevalence", "Case Prevalence", "Infection Incidence", "Case Incidence"))
+                                 measures = c("prevalence_infection", "prevalence_case",
+                                              "incidence_ppd_infection", "incidence_ppd_case",
+                                              "incidence_ppy_infection", "incidence_ppy_case"),
+                                 measures_labels = c("Infection Prevalence", "Case Prevalence",
+                                                     "Infection Incidence p.p.day", "Case Incidence p.p.day",
+                                                     "Infection Incidence p.p.yea", "Case Incidence p.p.yea"))
   {
   
   require(dplyr)
