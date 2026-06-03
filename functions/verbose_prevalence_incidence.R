@@ -41,14 +41,18 @@ true_realtime_measures <- function(df) {
     # Incidence and Prevalence calcs
     mutate(prevalence_infection = infections/n) %>%
     mutate(prevalence_case = cases/n) %>%
-    mutate(incidence_infection = new_infections/person_days_at_risk) %>%
-    mutate(incidence_case = new_cases/person_days_at_risk) %>%
+    mutate(incidence_ppd_infection = new_infections/person_days_at_risk) %>%
+    mutate(incidence_ppd_case = new_cases/person_days_at_risk) %>%
+    mutate(incidence_ppy_infection = new_infections/(person_days_at_risk/365)) %>%
+    mutate(incidence_ppy_case = new_cases/(person_days_at_risk/365)) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     mutate(type_measure = "True Instantaneous") %>%
     select(timestep, type_measure, n, person_days_at_risk,
            infections, cases, new_infections, new_cases,
-           prevalence_infection, prevalence_case, incidence_infection, incidence_case)
+           prevalence_infection, prevalence_case,
+           incidence_ppd_infection, incidence_ppd_case,
+           incidence_ppy_infection, incidence_ppy_case)
   
   return(result)
 }
@@ -85,14 +89,18 @@ true_realtime_measures_by_age <- function(df) {
     # Incidence and Prevalence calcs
     mutate(prevalence_infection = infections/n) %>%
     mutate(prevalence_case = cases/n) %>%
-    mutate(incidence_infection = new_infections/person_days_at_risk) %>%
-    mutate(incidence_case = new_cases/person_days_at_risk) %>%
+    mutate(incidence_ppd_infection = new_infections/person_days_at_risk) %>%
+    mutate(incidence_ppd_case = new_cases/person_days_at_risk) %>%
+    mutate(incidence_ppy_infection = new_infections/(person_days_at_risk/365)) %>%
+    mutate(incidence_ppy_case = new_cases/(person_days_at_risk/365)) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     mutate(type_measure = "True Instantaneous") %>%
     select(timestep, type_measure, age_at_time_year, n, person_days_at_risk,
            infections, cases, new_infections, new_cases,
-           prevalence_infection, prevalence_case, incidence_infection, incidence_case)
+           prevalence_infection, prevalence_case,
+           incidence_ppd_infection, incidence_ppd_case,
+           incidence_ppy_infection, incidence_ppy_case)
   
   return(result)
 }
@@ -161,8 +169,10 @@ aggregate_incidence_period <- function(df, trial_start,
     mutate(new_infections = sum(new_infection_at_time)) %>%
     mutate(new_cases = sum(new_case_at_time)) %>%
     # Incidence 
-    mutate(incidence_infection = new_infections/person_days_at_risk) %>%
-    mutate(incidence_case = new_cases/person_days_at_risk) %>%
+    mutate(incidence_ppd_infection = new_infections/person_days_at_risk) %>%
+    mutate(incidence_ppd_case = new_cases/person_days_at_risk) %>%
+    mutate(incidence_ppy_infection = new_infections/(person_days_at_risk/365)) %>%
+    mutate(incidence_ppy_case = new_cases/(person_days_at_risk/365)) %>%
     # Get the last timestep of each period to plot
     mutate(timestep = max(timestep)) %>%
     # Cleaning
@@ -171,7 +181,8 @@ aggregate_incidence_period <- function(df, trial_start,
     select(timestep, type_measure, period, period_label,
            n, person_days_at_risk,
            new_infections, new_cases,
-           incidence_infection, incidence_case)
+           incidence_ppd_infection, incidence_ppd_case,
+           incidence_ppy_infection, incidence_ppy_case)
   
   return(result)
   
@@ -307,8 +318,10 @@ visits_incidence <- function(df, trial_start,
     mutate(new_infections = sum(new_infection_at_time)) %>%
     mutate(new_cases = sum(new_case_at_time)) %>%
     # Incidence 
-    mutate(incidence_infection = new_infections/person_days_at_risk) %>%
-    mutate(incidence_case = new_cases/person_days_at_risk) %>%
+    mutate(incidence_ppd_infection = new_infections/person_days_at_risk) %>%
+    mutate(incidence_ppd_case = new_cases/person_days_at_risk) %>%
+    mutate(incidence_ppy_infection = new_infections/(person_days_at_risk/365)) %>%
+    mutate(incidence_ppy_case = new_cases/(person_days_at_risk/365)) %>%
     # Get the last timestep of each period to plot
     mutate(timestep = max(timestep)) %>%
     # Cleaning
@@ -317,7 +330,8 @@ visits_incidence <- function(df, trial_start,
     select(timestep, type_measure, period, period_label,
            n, person_days_at_risk,
            new_infections, new_cases,
-           incidence_infection, incidence_case)
+           incidence_ppd_infection, incidence_ppd_case,
+           incidence_ppy_infection, incidence_ppy_case)
   
   return(result)
 }
