@@ -230,7 +230,7 @@ png(filename = paste0("outputs_effect_plots/protective_effect_", gsub(" ", "_", 
     width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = filter(protective_effect, !is.na(effect) &
                        !(type_measure == "True Instantaneous" & grepl("Incidence", measure)) &
-                       (grepl("Prev", measure) | grepl("p.p.y", measure))),
+                       (grepl("Infection Prev", measure) | grepl("Case Incidence p.p.y", measure))),
        aes(x = timestep, y = effect)) +
   geom_point() + geom_line() +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
