@@ -177,7 +177,7 @@ aggregate_incidence_period <- function(df, trial_start,
     mutate(timestep = max(timestep)) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
-    mutate(type_measure = paste0("Aggregate over ", followup_period_year*12, " mos.")) %>%
+    mutate(type_measure = paste0("True, aggregate over ", followup_period_year*12, " mos.")) %>%
     select(timestep, type_measure, period, period_label,
            n, person_days_at_risk,
            new_infections, new_cases,
@@ -326,7 +326,10 @@ visits_incidence <- function(df, trial_start,
     mutate(timestep = max(timestep)) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
-    mutate(type_measure = paste0("ACD visits, aggr. over ", followup_period_year*12, " mos.")) %>%
+    mutate(type_measure = paste(paste0("ACD every ", routine_visits_in_weeks[1], " weeks"),
+                                paste0("with ", days_catchment, " days window,"),
+                                paste("aggr. over ", followup_period_year*12, " mos."),
+                                sep = "\n")) %>%
     select(timestep, type_measure, period, period_label,
            n, person_days_at_risk,
            new_infections, new_cases,
