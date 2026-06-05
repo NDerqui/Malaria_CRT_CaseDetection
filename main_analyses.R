@@ -160,7 +160,7 @@ png(filename = paste0("outputs_effect_plots/all_true_estimates_", gsub(" ", "_",
     width = 12, height = 8, units = "in", res = 1200)
 ggplot(data = filter(plot_all_estimates,
                      (type_measure == "True Instantaneous" & grepl("Prev", measure)) |
-                       (grepl("Aggr", type_measure) & grepl("p.p.y", measure))),
+                       (grepl("aggr", type_measure) & grepl("p.p.y", measure) & !(grepl("ACD", type_measure)))),
        aes(x = timestep, y = value, group = run, color = run)) +
   geom_point() + geom_line() +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
@@ -168,7 +168,7 @@ ggplot(data = filter(plot_all_estimates,
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
   labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name, ": True estimates")) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_nested(type_measure + measure ~ ., scales = "free", drop = TRUE)
 dev.off()
@@ -177,7 +177,8 @@ dev.off()
 
 png(filename = paste0("outputs_effect_plots/incidence_estimates_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
-ggplot(data = filter(plot_all_estimates, grepl("p.p.yea", measure)),
+ggplot(data = filter(plot_all_estimates,
+                     grepl("p.p.yea", measure) & !grepl("Ins", type_measure)),
        aes(x = timestep, y = value, group = run, color = run)) +
   geom_point() + geom_line() +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
@@ -185,7 +186,7 @@ ggplot(data = filter(plot_all_estimates, grepl("p.p.yea", measure)),
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
   labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name, ": Incidence estimates")) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_nested(type_measure + measure ~ ., scales = "free", drop = TRUE)
 dev.off()
@@ -206,7 +207,7 @@ ggplot(data = filter(plot_all_estimates, grepl("Prevalence", measure)),
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
   labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name, ": Prevalence estimates")) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_grid(measure ~ ., scales = "free")
 dev.off()
@@ -221,7 +222,8 @@ source("functions/verbose_effect_size.R")
 
 plot_all_estimates <- wrap_for_plot_effect(estimates_all)
 
-protective_effect <- get_relative_effect(df = plot_all_estimates)
+protective_effect <- get_relative_effect(df = plot_all_estimates) %>%
+  filter(!is.na(effect))
 
 write.csv(protective_effect, row.names = FALSE,
           file = paste0("outputs_effect_size/protective_effect_", gsub(" ", "_", tolower(trial_name)), ".csv"))
@@ -237,8 +239,8 @@ ggplot(data = filter(protective_effect, !is.na(effect) &
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
   scale_y_continuous(labels = scales::percent, limits = 0:1) +
-  labs(x = "Year", y = NULL,
-       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
+  labs(x = "Year", y = "Intervention Effect",
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name, ": Intervention Effect Size")) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_nested(type_measure + measure ~ ., scales = "free")
 dev.off()
@@ -287,7 +289,7 @@ ggplot(data = filter(results, is.numeric(effect)),
   scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                      labels = (0:sim_length)) +
   scale_y_continuous(labels = scales::percent, limits = 0:1) +
-  labs(x = "Year", y = NULL,
+  labs(x = "Year", y = "Intervention Effect",
        title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name)) +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_nested(type_measure + measure ~ ., scales = "free")
@@ -328,6 +330,8 @@ for (test in 1:length(visits)) {
   
 }
 rm(test, test2)
+
+results2$type_measure <- "ACD visits, aggr. over 12 mos."
 
 png(filename = paste0("outputs_effect_plots/test2_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 5, units = "in", res = 1200)
