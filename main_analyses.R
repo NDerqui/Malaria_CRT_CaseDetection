@@ -342,7 +342,7 @@ p2 <- ggplot(data = filter(results2, grepl("Case Incidence p.p.ye", measure)),
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
   facet_nested(type_measure + measure ~ ., scales = "free")
 
-png(filename = paste0("outputs_effect_plots/test2_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_effect_plots/prot_eff_pars_test_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 12, height = 8, units = "in", res = 1200)
 ggarrange(p1, p2, ncol = 1, common.legend = FALSE)
 dev.off()
@@ -357,7 +357,8 @@ rm(p1, p2)
 
 source("functions/verbose_infection_time.R")
 
-#### time-to-first-infection ####
+
+#### time-to-infection ####
 
 ## For time since (first intervention)
 
@@ -419,24 +420,11 @@ plot_survival_b <- ggplot(data = surv_fit_1case,
   labs(x = "Year after trial start", y = "Proportion without clinical case") +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
 
-png(filename = paste0("outputs_effect_plots/outcomes_time_to_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_effect_plots/true_time_to_event_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 8, units = "in", res = 1200)
 annotate_figure(ggarrange(plot_survival_a, plot_survival_b, nrow = 2),
-                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name))
+                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name, ": Time-to-event"))
 dev.off()
-
-# Cox and HZ
-
-# For infection (with and without age)
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_data))
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot_survival_data))
-
-# For clinical case (with and without age)
-summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot_survival_data))
-summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot_survival_data))
-
-
-#### time-to-second-itn ####
 
 ## For time since second intervention
 
@@ -469,7 +457,7 @@ surv_fit_2case <- tidy(surv_fit_2case) %>%
 plot_survival_2a <- ggplot(data = surv_fit_2infection,
                            aes(x = time, y = estimate, color = strata, fill = strata)) +
   geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.3) +
   geom_point(data = surv_fit_2infection[surv_fit_2infection$n.censor != 0,],
              aes(x = time, y = estimate,color = strata, fill = strata),
              shape = 4, size = 4) +
@@ -484,7 +472,7 @@ plot_survival_2a <- ggplot(data = surv_fit_2infection,
 plot_survival_2b <- ggplot(data = surv_fit_2case,
                            aes(x = time, y = estimate, color = strata, fill = strata)) +
   geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.3) +
   geom_point(data = surv_fit_2case[surv_fit_2case$n.censor != 0,],
              aes(x = time, y = estimate,color = strata, fill = strata),
              shape = 4, size = 4) +
@@ -496,11 +484,25 @@ plot_survival_2b <- ggplot(data = surv_fit_2case,
   labs(x = "Year after second intervention", y = "Proportion without clinical case") +
   theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
 
-png(filename = paste0("outputs_effect_plots/outcomes_time_to_2_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_effect_plots/true_time_to_event2_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 8, units = "in", res = 1200)
 annotate_figure(ggarrange(plot_survival_2a, plot_survival_2b, nrow = 2),
-                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name))
+                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name, ": Time-to-event"))
 dev.off()
+
+
+
+# Cox and HZ
+
+# For infection (with and without age)
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_data))
+summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot_survival_data))
+
+# For clinical case (with and without age)
+summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot_survival_data))
+summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot_survival_data))
+
+
 
 # Cox and HZ
 
