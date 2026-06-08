@@ -491,25 +491,52 @@ annotate_figure(ggarrange(plot_survival_2a, plot_survival_2b, nrow = 2),
 dev.off()
 
 
+#### hazard ratio effect ####
 
-# Cox and HZ
+source("functions/verbose_effect_size.R")
 
-# For infection (with and without age)
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_data))
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot_survival_data))
+# HR for first event from first intervention
 
-# For clinical case (with and without age)
-summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot_survival_data))
-summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot_survival_data))
+hr_1infection <- get_hazard_ratio(df = plot_survival_data,
+                                  time_col = "time_to_infection",
+                                  event_col = "ever_infected") %>%
+  mutate(timestep = (trial_start) * year,
+         type_measure = "True Time-to-event",
+         measure = "Infection Hazard Ratio",
+         effect = 1 - hazard_ratio)
 
+hr_1case <- get_hazard_ratio(df = plot_survival_data,
+                             time_col = "time_to_case",
+                             event_col = "ever_case") %>%
+  mutate(timestep = (trial_start) * year,
+         type_measure = "True Time-to-event",
+         measure = "Case Hazard Ratio",
+         effect = 1 - hazard_ratio)
 
+# HR for first event from second intervention
 
-# Cox and HZ
+hr_2infection <- get_hazard_ratio(df = plot_survival_data_2,
+                                  time_col = "time_to_infection",
+                                  event_col = "ever_infected") %>%
+  mutate(timestep = (trial_start+trial_second_intervention) * year,
+         type_measure = "True Time-to-event",
+         measure = "Infection Hazard Ratio",
+         effect = 1 - hazard_ratio)
 
-# For infection (with and without age)
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_data_2))
-summary(coxph(Surv(time_to_infection, ever_infected) ~ run + age_at_first_infection, data = plot_survival_data_2))
+hr_2case <- get_hazard_ratio(df = plot_survival_data_2,
+                             time_col = "time_to_case",
+                             event_col = "ever_case") %>%
+  mutate(timestep = (trial_start+trial_second_intervention) * year,
+         type_measure = "True Time-to-event",
+         measure = "Case Hazard Ratio",
+         effect = 1 - hazard_ratio)
 
-# For clinical case (with and without age)
-summary(coxph(Surv(time_to_case, ever_case) ~ run, data = plot_survival_data_2))
-summary(coxph(Surv(time_to_case, ever_case) ~ run + age_at_first_case, data = plot_survival_data_2))
+hr_effect <- bind_rows(hr_1infection, hr_1case,
+                       hr_2infection, hr_2case)
+rm(hr_1infection, hr_1case,
+   hr_2infection, hr_2case)
+
+# Save as before
+
+write.csv(hr_effect, row.names = FALSE,
+          file = paste0("outputs_effect_size/timetoevent_hr_", gsub(" ", "_", tolower(trial_name)), ".csv"))
