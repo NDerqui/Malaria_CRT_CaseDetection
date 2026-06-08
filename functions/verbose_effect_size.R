@@ -69,33 +69,35 @@ get_relative_effect <- function(df,
 
 # HAZARD RATIO EFFECT SIZE
 
-# INPUT: a survival analysis df, usually after prepare_survival().
+# INPUT: a survival analysis df, usually after get_time_to_event() amd prepare_Survival().
 # OUTPUT: a one-row df with hazard ratio, confidence interval, and p-value.
 
 get_hazard_ratio <- function(df,
-                             time_col,
-                             event_col,
-                             arm_col = "run",
-                             reference = "Control",
-                             adjust_vars = NULL) {
+                             time_col, event_col,
+                             arm_col = "run", control = "Control",
+                             covariates = NULL) {
 
   require(survival)
-
-  df[[arm_col]] <- stats::relevel(as.factor(df[[arm_col]]), ref = reference)
-
-  rhs <- paste(c(arm_col, adjust_vars), collapse = " + ")
+  
+  # Relevel our df so that our arm column has the control as reference
+  df[[arm_col]] <- stats::relevel(as.factor(df[[arm_col]]), ref = control)
+  
+  # Make a vector with our arm_col + any other covariates we want to get HR from
+  model_covars <- paste(c(arm_col, covariates), collapse = " + ")
+  
+  # Write our formula with our time to event col and covariates from before
   model_formula <- stats::as.formula(
-    paste0("survival::Surv(", time_col, ", ", event_col, ") ~ ", rhs)
-  )
-
+    paste0("survival::Surv(", time_col, ", ", event_col, ") ~ ", model_covars))
+  
+  # Run our surmvival model
   fit <- survival::coxph(model_formula, data = df)
   fit_summary <- summary(fit)
+  
+  # Save an object
 
   arm_row <- grep(paste0("^", arm_col), rownames(fit_summary$coefficients))[1]
 
   return(data.frame(
-    outcome = event_col,
-    term = rownames(fit_summary$coefficients)[arm_row],
     hazard_ratio = fit_summary$coefficients[arm_row, "exp(coef)"],
     conf_low = fit_summary$conf.int[arm_row, "lower .95"],
     conf_high = fit_summary$conf.int[arm_row, "upper .95"],
