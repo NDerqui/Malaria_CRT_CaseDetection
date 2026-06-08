@@ -500,7 +500,7 @@ source("functions/verbose_effect_size.R")
 hr_1infection <- get_hazard_ratio(df = plot_survival_data,
                                   time_col = "time_to_infection",
                                   event_col = "ever_infected") %>%
-  mutate(timestep = (trial_start) * year,
+  mutate(timestep = (trial_start+trial_second_intervention) * year,
          type_measure = "True Time-to-event",
          measure = "Infection Hazard Ratio",
          effect = 1 - hazard_ratio)
@@ -508,7 +508,7 @@ hr_1infection <- get_hazard_ratio(df = plot_survival_data,
 hr_1case <- get_hazard_ratio(df = plot_survival_data,
                              time_col = "time_to_case",
                              event_col = "ever_case") %>%
-  mutate(timestep = (trial_start) * year,
+  mutate(timestep = (trial_start+trial_second_intervention) * year,
          type_measure = "True Time-to-event",
          measure = "Case Hazard Ratio",
          effect = 1 - hazard_ratio)
@@ -518,7 +518,7 @@ hr_1case <- get_hazard_ratio(df = plot_survival_data,
 hr_2infection <- get_hazard_ratio(df = plot_survival_data_2,
                                   time_col = "time_to_infection",
                                   event_col = "ever_infected") %>%
-  mutate(timestep = (trial_start+trial_second_intervention) * year,
+  mutate(timestep = sim_length * year,
          type_measure = "True Time-to-event",
          measure = "Infection Hazard Ratio",
          effect = 1 - hazard_ratio)
@@ -526,7 +526,7 @@ hr_2infection <- get_hazard_ratio(df = plot_survival_data_2,
 hr_2case <- get_hazard_ratio(df = plot_survival_data_2,
                              time_col = "time_to_case",
                              event_col = "ever_case") %>%
-  mutate(timestep = (trial_start+trial_second_intervention) * year,
+  mutate(timestep = sim_length * year,
          type_measure = "True Time-to-event",
          measure = "Case Hazard Ratio",
          effect = 1 - hazard_ratio)
@@ -540,3 +540,138 @@ rm(hr_1infection, hr_1case,
 
 write.csv(hr_effect, row.names = FALSE,
           file = paste0("outputs_effect_size/timetoevent_hr_", gsub(" ", "_", tolower(trial_name)), ".csv"))
+
+# Quiz viz
+
+# png(filename = paste0("outputs_effect_plots/protective_effect_w_hr_", gsub(" ", "_", tolower(trial_name)), ".png"),
+#     width = 12, height = 8, units = "in", res = 1200)
+ggplot(data = filter(bind_rows(protective_effect, hr_effect), !is.na(effect) &
+                     !(type_measure == "True Instantaneous" & grepl("Incidence", measure)) &
+                     (grepl("Infection Prev", measure) | grepl("Case Incidence p.p.y", measure) | grepl("Time", type_measure))),
+       aes(x = timestep, y = effect)) +
+  geom_point() + geom_line() +
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent, limits = 0:1) +
+  labs(x = "Year", y = "Intervention Protective Effect",
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name, ": Intervention Effect Size")) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
+  facet_nested(type_measure + measure ~ ., scales = "free")
+# dev.off()
+
+
+#### time-to-infection with ACDs ####
+
+## For time since second intervention
+
+event_time_visit_control <- infections_control %>%
+  get_time_to_visit_case(time_inter = (trial_start + trial_second_intervention)*year,
+                         routine_visits_in_weeks = seq(4, 6*52, 4),
+                         days_catchment = 2) %>% mutate(run = "Control")
+
+event_time_visit_bednet <- infections_bednet %>%
+  get_time_to_visit_case(time_inter = (trial_start + trial_second_intervention)*year,
+                         routine_visits_in_weeks = seq(4, 6*52, 4),
+                         days_catchment = 2) %>% mutate(run = "Intervention")
+
+# Survival analysis
+
+# Prepare for survival analysis (with censoring time)
+
+plot_survival_data_3 <- rbind(event_time_visit_control, event_time_visit_bednet) %>%
+  prepare_survival(time_inter = (trial_start + trial_second_intervention)*year,
+                   sim_length = sim_length*year)
+
+# Run models
+
+surv_fit_3infection <-  survfit(Surv(time_to_infection, ever_infected) ~ run, data = plot_survival_data_3)
+surv_fit_3case <-  survfit(Surv(time_to_case, ever_case) ~ run, data = plot_survival_data_3)
+
+surv_fit_3infection <- tidy(surv_fit_3infection) %>%
+  mutate(strata = gsub("run=", "", strata))
+surv_fit_3case <- tidy(surv_fit_3case) %>%
+  mutate(strata = gsub("run=", "", strata))
+
+# Plot
+
+plot_survival_3a <- ggplot(data = surv_fit_3infection,
+                           aes(x = time, y = estimate, color = strata, fill = strata)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.3) +
+  geom_point(data = surv_fit_2infection[surv_fit_2infection$n.censor != 0,],
+             aes(x = time, y = estimate,color = strata, fill = strata),
+             shape = 4, size = 4) +
+  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year after second intervention", y = "Proportion without infection") +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) 
+
+plot_survival_3b <- ggplot(data = surv_fit_3case,
+                           aes(x = time, y = estimate, color = strata, fill = strata)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.3) +
+  geom_point(data = surv_fit_2case[surv_fit_2case$n.censor != 0,],
+             aes(x = time, y = estimate,color = strata, fill = strata),
+             shape = 4, size = 4) +
+  scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year after second intervention", y = "Proportion without clinical case") +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank())
+
+png(filename = paste0("outputs_effect_plots/time_to_event2_w_acd_", gsub(" ", "_", tolower(trial_name)), ".png"),
+    width = 8, height = 8, units = "in", res = 1200)
+annotate_figure(ggarrange(plot_survival_2a, plot_survival_2b, nrow = 2),
+                top = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name, ": Time-to-event w/ ACD visits"))
+dev.off()
+
+# HR for first event from second intervention
+
+hr_2infection <- get_hazard_ratio(df = plot_survival_data_3,
+                                  time_col = "time_to_infection",
+                                  event_col = "ever_infected") %>%
+  mutate(timestep = sim_length * year,
+         type_measure = "Time-to-event w/ ACD visits",
+         measure = "Infection Hazard Ratio",
+         effect = 1 - hazard_ratio)
+
+hr_2case <- get_hazard_ratio(df = plot_survival_data_3,
+                             time_col = "time_to_case",
+                             event_col = "ever_case") %>%
+  mutate(timestep = sim_length * year,
+         type_measure = "Time-to-event w/ ACD visits",
+         measure = "Case Hazard Ratio",
+         effect = 1 - hazard_ratio)
+
+# Save as before
+
+write.csv(bind_rows(hr_effect, hr_2infection, hr_2case), row.names = FALSE,
+          file = paste0("outputs_effect_size/timetoevent_hr_", gsub(" ", "_", tolower(trial_name)), ".csv"))
+
+# Quiz viz
+
+png(filename = paste0("outputs_effect_plots/protective_effect_w_hr_", gsub(" ", "_", tolower(trial_name)), ".png"),
+    width = 12, height = 10, units = "in", res = 1200)
+ggplot(data = filter(bind_rows(protective_effect, hr_effect, hr_2case), !is.na(effect) &
+                       !(type_measure == "True Instantaneous" & grepl("Incidence", measure)) &
+                       (grepl("Infection Prev", measure) | grepl("Case Incidence p.p.y", measure) |
+                          (grepl("ime-to", type_measure) & grepl("Case",measure)))),
+       aes(x = timestep, y = effect)) +
+  geom_point() + geom_line() +
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                     labels = (0:sim_length)) +
+  scale_y_continuous(labels = scales::percent, limits = 0:1) +
+  labs(x = "Year", y = "Intervention Protective Effect",
+       title = paste0("Simulated a ", human_population, " population, Sampled ", trial_size, " for trial, ", trial_name, ": Intervention Effect Size")) +
+  theme_bw() + theme(legend.position = "bottom", legend.title = element_blank()) +
+  facet_nested(type_measure + measure ~ ., scales = "free")
+dev.off()
+
+rm(hr_2infection, hr_2case)
