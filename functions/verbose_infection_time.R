@@ -67,7 +67,7 @@ get_time_to_visit_case <- function(df, time_inter,
   
   # IMP: routine visits passed as week measure (7 days)
   
-  routine_visits_times <- (trial_start*year + routine_visits_in_weeks*7)
+  routine_visits_times <- (time_inter + routine_visits_in_weeks*7)
   # Get all events happening in interval (each_timepoint - days_catchment):each_timestep
   routine_visits_timesteps <- unlist( 
     lapply(routine_visits_times,
