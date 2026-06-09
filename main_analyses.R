@@ -51,7 +51,7 @@ trial_name <- paste0("Seasonal Init EIR ", init_EIR)
 ## Read the analyses cohort data (age cohort) from previous step
 
 analyses_cohort_control <- read.csv(paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_control.csv"))
-analyses_cohort_bednet <- read.csv(paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_bednet.csv"))
+analyses_cohort_intervention <- read.csv(paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_intervention.csv"))
 
 
 #### infections/cases ####
@@ -65,7 +65,7 @@ source("functions/verbose_infection_state.R")
 infections_control <- analyses_cohort_control %>%
   detect_ever_malaria() %>% detect_infection()
 
-infections_bednet <- analyses_cohort_bednet %>%
+infections_intervention <- analyses_cohort_intervention %>%
   detect_ever_malaria() %>% detect_infection()
 
 
@@ -94,7 +94,7 @@ measures_labels <- c("Infection Prevalence", "Case Prevalence",
 estimates_control <- infections_control %>%
   true_realtime_measures() %>% mutate(run = "Control")
 
-estimates_bednet <- infections_bednet %>%
+estimates_intervention <- infections_intervention %>%
   true_realtime_measures() %>% mutate(run = "Intervention")
 
 ## aggregate incidence
@@ -102,7 +102,7 @@ estimates_bednet <- infections_bednet %>%
 estimates_aggr_control <- infections_control %>%
   aggregate_incidence_period(trial_start = trial_start) %>% mutate(run = "Control")
 
-estimates_aggr_bednet <- infections_bednet %>%
+estimates_aggr_intervention <- infections_intervention %>%
   aggregate_incidence_period(trial_start = trial_start) %>% mutate(run = "Intervention")
 
 ## cross-sectional survey prevalence
@@ -111,7 +111,7 @@ estimates_survey_control <- infections_control %>%
   survey_prevalence(trial_start = trial_start,
                     cross_surveys_in_years = seq(0.5, 6, 0.5)) %>% # Surveys every 6 months
   mutate(run = "Control")
-estimates_survey_bednet <- infections_bednet %>%
+estimates_survey_intervention <- infections_intervention %>%
   survey_prevalence(trial_start = trial_start,
                     cross_surveys_in_years = seq(0.5, 6, 0.5)) %>% # Surveys every 6 months
   mutate(run = "Intervention")
@@ -123,7 +123,7 @@ estimates_visits_control <- infections_control %>%
                    routine_visits_in_weeks = seq(4, 6*52, 4), # Surveys every 2 weeks
                    days_catchment = 2) %>%           # Cases appearing in last 48 h
   mutate(run = "Control")
-estimates_visits_bednet <- infections_bednet %>%
+estimates_visits_intervention <- infections_intervention %>%
   visits_incidence(trial_start = trial_start,
                    routine_visits_in_weeks = seq(4, 6*52, 4), # Surveys every 2 weeks
                    days_catchment = 2) %>%           # Cases appearing in last 48 h
@@ -131,10 +131,10 @@ estimates_visits_bednet <- infections_bednet %>%
 
 ## merge
 
-estimates_all <- bind_rows(estimates_control, estimates_bednet,
-                           estimates_aggr_control, estimates_aggr_bednet,
-                           estimates_survey_control, estimates_survey_bednet,
-                           estimates_visits_control, estimates_visits_bednet)
+estimates_all <- bind_rows(estimates_control, estimates_intervention,
+                           estimates_aggr_control, estimates_aggr_intervention,
+                           estimates_survey_control, estimates_survey_intervention,
+                           estimates_visits_control, estimates_visits_intervention)
 
 dir.create("outputs_effect_size/", showWarnings = FALSE)
 write.csv(estimates_all, row.names = FALSE,
@@ -261,19 +261,19 @@ for (test in 1:length(cross_surveys)) {
     survey_prevalence(trial_start = trial_start,
                       cross_surveys_in_years = seq(cross_surveys[test], 6, cross_surveys[test])) %>%
     mutate(run = "Control")
-  bednet <- infections_bednet %>%
+  intervention <- infections_intervention %>%
     survey_prevalence(trial_start = trial_start,
                       cross_surveys_in_years = seq(cross_surveys[test], 6, cross_surveys[test])) %>%
     mutate(run = "Intervention")
   
-  prevalence <- rbind(control, bednet) %>%
+  prevalence <- rbind(control, intervention) %>%
     wrap_for_plot_effect() %>% get_relative_effect() %>%
     mutate(var = paste0(cross_surveys[test]*12, " months"))
   
   # Add to previous results
   
   results <- rbind(results, prevalence)
-  rm(control, bednet, prevalence)
+  rm(control, intervention, prevalence)
   
 }
 rm(test)
@@ -309,20 +309,20 @@ for (test in 1:length(visits)) {
                        routine_visits_in_weeks = seq(visits[test], 6*52, visits[test]),
                        days_catchment = visits_period[test2]) %>%
       mutate(run = "Control")
-    bednet <- infections_bednet %>%
+    intervention <- infections_intervention %>%
       visits_incidence(trial_start = trial_start,
                        routine_visits_in_weeks = seq(visits[test], 6*52, visits[test]),
                        days_catchment = visits_period[test2]) %>%
       mutate(run = "Intervention")
     
-    incidence <- rbind(control, bednet) %>%
+    incidence <- rbind(control, intervention) %>%
       wrap_for_plot_effect() %>% get_relative_effect() %>%
       mutate(var = paste0(visits[test], " weeks - ", visits_period[test2], " days window"))
     
     # Add to previous results
     
     results2 <- rbind(results2, incidence)
-    rm(control, bednet, incidence)
+    rm(control, intervention, incidence)
   }
   
 }
@@ -365,7 +365,7 @@ source("functions/verbose_infection_time.R")
 event_time_control <- infections_control %>%
   get_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Control")
 
-event_time_bednet <- infections_bednet %>%
+event_time_intervention <- infections_intervention %>%
   get_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Intervention")
 
 # Survival analysis
@@ -375,7 +375,7 @@ library(tidycmprsk)
 
 # Prepare for survival analysis (with censoring time)
 
-plot_survival_data <- rbind(event_time_control, event_time_bednet) %>%
+plot_survival_data <- rbind(event_time_control, event_time_intervention) %>%
   prepare_survival(time_inter = trial_start*year, sim_length = sim_length*year)
 
 # Run models
@@ -431,14 +431,14 @@ dev.off()
 event_time_control <- infections_control %>%
   get_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Control")
 
-event_time_bednet <- infections_bednet %>%
+event_time_intervention <- infections_intervention %>%
   get_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Intervention")
 
 # Survival analysis
 
 # Prepare for survival analysis (with censoring time)
 
-plot_survival_data_2 <- rbind(event_time_control, event_time_bednet) %>%
+plot_survival_data_2 <- rbind(event_time_control, event_time_intervention) %>%
   prepare_survival(time_inter = (trial_start + trial_second_intervention)*year,
                    sim_length = sim_length*year)
 
@@ -570,7 +570,7 @@ event_time_visit_control <- infections_control %>%
                          routine_visits_in_weeks = seq(4, 6*52, 4),
                          days_catchment = 2) %>% mutate(run = "Control")
 
-event_time_visit_bednet <- infections_bednet %>%
+event_time_visit_intervention <- infections_intervention %>%
   get_time_to_visit_case(time_inter = (trial_start + trial_second_intervention)*year,
                          routine_visits_in_weeks = seq(4, 6*52, 4),
                          days_catchment = 2) %>% mutate(run = "Intervention")
@@ -579,7 +579,7 @@ event_time_visit_bednet <- infections_bednet %>%
 
 # Prepare for survival analysis (with censoring time)
 
-plot_survival_data_3 <- rbind(event_time_visit_control, event_time_visit_bednet) %>%
+plot_survival_data_3 <- rbind(event_time_visit_control, event_time_visit_intervention) %>%
   prepare_survival(time_inter = (trial_start + trial_second_intervention)*year,
                    sim_length = sim_length*year)
 

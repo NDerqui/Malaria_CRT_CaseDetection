@@ -107,14 +107,14 @@ write.csv(df_control, "outputs_verbose_sims/verbose_dumping_control.csv", row.na
 out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
                        snapshot_time = snapshot_time,
                        key_bednet = TRUE, key_intervention_time = key_intervention_time,
-                       bed_coverage = 0.95, run_note = "bednet")
+                       bed_coverage = 0.95, run_note = "intervention")
 
-df_bednet <- read.csv("outputs_verbose_sims/verbose_dumping_bednet.csv")
+df_intervention <- read.csv("outputs_verbose_sims/verbose_dumping_intervention.csv")
 
-df_bednet$process <- out$process_vector[df_bednet$process_index]
-df_bednet$state <- out$state_list[df_bednet$state_index]
+df_intervention$process <- out$process_vector[df_intervention$process_index]
+df_intervention$state <- out$state_list[df_intervention$state_index]
 
-write.csv(df_bednet, "outputs_verbose_sims/verbose_dumping_bednet.csv", row.names = FALSE)
+write.csv(df_intervention, "outputs_verbose_sims/verbose_dumping_intervention.csv", row.names = FALSE)
 
 ## Read the verbose files only
 
@@ -123,8 +123,8 @@ rm(out)
 df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
 df_control_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_control.csv")
 
-df_bednet <- read.csv("outputs_verbose_sims/verbose_dumping_bednet.csv")
-df_bednet_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_bednet.csv")
+df_intervention <- read.csv("outputs_verbose_sims/verbose_dumping_intervention.csv")
+df_intervention_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_intervention.csv")
 
 gc()
 
@@ -149,14 +149,14 @@ analyses_cohort_control <- df_control %>%
   get_age_cohort(age_snapshot = df_control_age, snapshot_time = snapshot_time) %>%
   get_enrol_sample(alive_by = trial_start * year, trial_size = trial_size)
 
-analyses_cohort_bednet <- df_bednet %>%
+analyses_cohort_intervention <- df_intervention %>%
   get_birth_death() %>%
-  get_age_cohort(age_snapshot = df_bednet_age, snapshot_time = snapshot_time) %>%
+  get_age_cohort(age_snapshot = df_intervention_age, snapshot_time = snapshot_time) %>%
   get_enrol_sample(alive_by = trial_start * year, trial_size = trial_size)
 
 # Clean space
 
-rm(df_control, df_bednet, df_control_age, df_bednet_age)
+rm(df_control, df_intervention, df_control_age, df_intervention_age)
 gc()
 
 # Save for future
@@ -164,8 +164,8 @@ gc()
 dir.create("outputs_agecohort_data", showWarnings = FALSE)
 write.csv(analyses_cohort_control, row.names = FALSE,
           file = paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_control.csv"))
-write.csv(analyses_cohort_bednet, row.names = FALSE,
-          file = paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_bednet.csv"))
+write.csv(analyses_cohort_intervention, row.names = FALSE,
+          file = paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_intervention.csv"))
 
 
 #### vis ####
@@ -173,7 +173,7 @@ write.csv(analyses_cohort_bednet, row.names = FALSE,
 dir.create("outputs_plots", showWarnings = FALSE)
 source("functions/verbose_vis.R")
 
-# Plot the control (no bednet)
+# Plot the control (no intervention)
 
 png(filename = paste0("outputs_plots/agecohort_overtime_control_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 5, units = "in", res = 1200)
@@ -183,11 +183,11 @@ plot_verbose_itn(df = analyses_cohort_control,
                  bednetstimesteps = seq(0, sim_length, 3)*year)
 dev.off()
 
-# Plot the bednet
+# Plot the intervention
 
-png(filename = paste0("outputs_plots/agecohort_overtime_bednet_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs_plots/agecohort_overtime_intervention_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 5, units = "in", res = 1200)
-plot_verbose_itn(df = analyses_cohort_bednet,
+plot_verbose_itn(df = analyses_cohort_intervention,
                  note = paste0("Intervention: ", trial_name), sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
