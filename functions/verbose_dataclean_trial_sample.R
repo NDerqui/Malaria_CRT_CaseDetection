@@ -24,12 +24,17 @@ get_enrol_sample <- function(df, alive_by = min(df$timestep), trial_size,
   # First, filter to individuals alive at our timepoint of interest (e.g. trial start):
   # They must have not died but also they must have been born by then.
   # (By default, those alive at start of sim, smallest timestep)
+  # Trials clear of infection at trial start, so need to filter
+  # to individuals that are S on trial start.
   # Finally, if desired, sample only a particular age group at our timepoint
   # (by default, everyone 0-100 years)
   
   df <- df %>%
     filter(timestep_born < alive_by) %>%
     filter(is.na(timestep_died) | timestep_died > alive_by) %>%
+    group_by(individual_index) %>%
+    filter(any(timestep == alive_by & state == "S")) %>%
+    ungroup() %>%
     # With the age group, we want people that at trial start have a particular age
     group_by(individual_index) %>%
     mutate(in_age_group = any(age_at_time[timestep == alive_by] >= (age_min * year) & age_at_time[timestep == alive_by] <= (age_max * year))) %>%
