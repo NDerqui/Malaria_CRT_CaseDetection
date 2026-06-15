@@ -39,7 +39,7 @@ month <- 30
 # General inputs: init_EIR, and
 # total sim size versus pop followed (analyses performed) at trial.
 
-init_EIR <- 1
+init_EIR <- 25
 
 human_population <- 10000
 trial_size <- 500
@@ -147,12 +147,14 @@ source("functions/verbose_dataclean_trial_sample.R")
 analyses_cohort_control <- df_control %>%
   get_birth_death() %>%
   get_age_cohort(age_snapshot = df_control_age, snapshot_time = snapshot_time) %>%
-  get_enrol_sample(alive_by = trial_start * year, trial_size = trial_size)
+  get_enrol_sample(alive_by = trial_start * year, trial_size = trial_size,
+                   age_min = 0, age_max = 10)
 
 analyses_cohort_intervention <- df_intervention %>%
   get_birth_death() %>%
   get_age_cohort(age_snapshot = df_intervention_age, snapshot_time = snapshot_time) %>%
-  get_enrol_sample(alive_by = trial_start * year, trial_size = trial_size)
+  get_enrol_sample(alive_by = trial_start * year, trial_size = trial_size,
+                   age_min = 0, age_max = 10)
 
 # Clean space
 
