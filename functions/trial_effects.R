@@ -15,7 +15,7 @@
 # (prevalence, incidence, whether true or observed by cross-sectional surveys, etc.),
 # which is useful for plotting too.
 
-wrap_for_plot_effect <- function(df,
+tidy_outcomes_for_effect <- function(df,
                                  measures = c("prevalence_infection", "prevalence_case",
                                               "incidence_ppd_infection", "incidence_ppd_case",
                                               "incidence_ppy_infection", "incidence_ppy_case"),
@@ -41,7 +41,7 @@ wrap_for_plot_effect <- function(df,
 
 # Getting the effect size of an intervention as: 1 - intervention/control.
 
-get_relative_effect <- function(df,
+estimate_relative_effect <- function(df,
                                 value_col = "value", arm_col = "run",
                                 control = "Control", intervention = "Intervention",
                                 outcome_cols = c("type_measure", "measure", "timestep")) {
@@ -69,10 +69,10 @@ get_relative_effect <- function(df,
 
 # HAZARD RATIO EFFECT SIZE
 
-# INPUT: a survival analysis df, usually after get_time_to_event() amd prepare_Survival().
+# INPUT: a survival analysis df, usually after estimate_true_time_to_event() amd prepare_Survival().
 # OUTPUT: a one-row df with hazard ratio, confidence interval, and p-value.
 
-get_hazard_ratio <- function(df,
+estimate_hazard_ratio <- function(df,
                              time_col, event_col,
                              arm_col = "run", control = "Control",
                              covariates = NULL) {
