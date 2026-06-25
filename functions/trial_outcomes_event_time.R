@@ -9,7 +9,7 @@
 # Able to control from where to start counting time:
 # e.g. start of trial or introduction of second intervention.
 
-detect_time_to_event <- function(df, time_inter) {
+estimate_true_time_to_event <- function(df, time_inter) {
   
   require(dplyr)
   
@@ -53,7 +53,7 @@ detect_time_to_event <- function(df, time_inter) {
 
 # A function to do as above but as if we were doing ACD visits:
 
-detect_time_to_event_acd <- function(df, time_inter,
+estimate_acd_time_to_event <- function(df, time_inter,
                                    routine_visits_in_weeks,
                                    days_catchment) {
   
@@ -128,7 +128,7 @@ detect_time_to_event_acd <- function(df, time_inter,
 # (Keep this separate from above as it's counter-intuitive to have time-to-event
 # if not having the event, only makes sense if performing a survival analysis)
 
-prepare_survival <- function(df, time_inter, sim_length) {
+prepare_time_to_event_survival <- function(df, time_inter, sim_length) {
   
   require(dplyr)
   
