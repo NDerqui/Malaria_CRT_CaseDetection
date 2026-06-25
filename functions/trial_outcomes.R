@@ -11,7 +11,7 @@
 # case prevalence at each timestep (case at timestep/population),
 # case incidence at each timestep (newly clinical case at timestep/population at risk).
 
-true_realtime_measures <- function(df) {
+estimate_true_realtime_outcomes <- function(df) {
   
   require(dplyr)
   
@@ -59,7 +59,7 @@ true_realtime_measures <- function(df) {
 
 # Same as above adding age group
 
-true_realtime_measures_by_age <- function(df) {
+estimate_true_realtime_outcomes_by_age <- function(df) {
   
   require(dplyr)
   
@@ -111,7 +111,7 @@ true_realtime_measures_by_age <- function(df) {
 # Aggregates incident infections/cases over longer follow-up windows, such as
 # 6 months or 1 year, instead of estimating incidence at each timestep.
 
-aggregate_incidence_period <- function(df, trial_start,
+estimate_true_aggregate_incidence <- function(df, trial_start,
                                        followup_period_year = 1,
                                        followup_end = max(df$timestep, na.rm = TRUE)) {
   
@@ -191,7 +191,7 @@ aggregate_incidence_period <- function(df, trial_start,
 
 ### ONLY FOR SELECTED TIMESTEPS (CROSS-SECTIONAL SURVEYS or ROUTINE VISITS)
 
-survey_prevalence <- function(df, cross_surveys_in_years, trial_start) {
+estimate_survey_prevalence <- function(df, cross_surveys_in_years, trial_start) {
   
   require(dplyr)
   year <- 365
@@ -232,7 +232,7 @@ survey_prevalence <- function(df, cross_surveys_in_years, trial_start) {
   return(result)
 }
 
-visits_incidence <- function(df, trial_start,
+estimate_acd_incidence <- function(df, trial_start,
                              routine_visits_in_weeks, days_catchment,
                              followup_period_year = 1,
                              followup_end = max(df$timestep, na.rm = TRUE)) {
