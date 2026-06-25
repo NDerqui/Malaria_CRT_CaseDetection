@@ -9,7 +9,7 @@
 # Able to control from where to start counting time:
 # e.g. start of trial or introduction of second intervention.
 
-get_time_to_event <- function(df, time_inter) {
+detect_time_to_event <- function(df, time_inter) {
   
   require(dplyr)
   
@@ -53,7 +53,7 @@ get_time_to_event <- function(df, time_inter) {
 
 # A function to do as above but as if we were doing ACD visits:
 
-get_time_to_visit_case <- function(df, time_inter,
+detect_time_to_event_acd <- function(df, time_inter,
                                    routine_visits_in_weeks,
                                    days_catchment) {
   
