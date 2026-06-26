@@ -17,6 +17,7 @@ analyse_two_arm_trial <- function(infections_control, infections_intervention,
                                   survey_protocol, acd_protocol) {
   
   year <- 356
+  require(rlang)
   
   # Fetch all necessary functions
   
@@ -40,16 +41,16 @@ analyse_two_arm_trial <- function(infections_control, infections_intervention,
   # Use a cross-sectional survey to estimate prevalence (protocol can be modified)
   
   estimates_survey <- bind_rows(
-    infections_control %>% estimate_survey_prevalence(trial_start = trial_start, !!!survey_protocol) %>% mutate(run = "Control"),
-    infections_intervention %>% estimate_survey_prevalence(trial_start = trial_start, !!!survey_protocol) %>% mutate(run = "Intervention")
+    inject(infections_control %>% estimate_survey_prevalence(trial_start = trial_start, !!!survey_protocol)) %>% mutate(run = "Control"),
+    inject(infections_intervention %>% estimate_survey_prevalence(trial_start = trial_start, !!!survey_protocol)) %>% mutate(run = "Intervention")
   )
   
   # Get estimates as if measured with ACD:
   # Use routine visits to estimate incidence (protocol can be modified)
   
   estimates_acd <- bind_rows(
-    infections_control %>% estimate_acd_incidence(trial_start = trial_start, !!!acd_protocol) %>% mutate(run = "Control"),
-    infections_intervention %>% estimate_acd_incidence(trial_start = trial_start, !!!acd_protocol) %>% mutate(run = "Intervention")
+    inject(infections_control %>% estimate_acd_incidence(trial_start = trial_start, !!!acd_protocol)) %>% mutate(run = "Control"),
+    inject(infections_intervention %>% estimate_acd_incidence(trial_start = trial_start, !!!acd_protocol)) %>% mutate(run = "Intervention")
   )
   
   # Put all estimates together
@@ -86,16 +87,16 @@ analyse_two_arm_trial <- function(infections_control, infections_intervention,
   # Get time-to-event estimates for first infection/case from the first intervention as if doing ACD
   
   tte_acd_1 <- bind_rows(
-    infections_control %>% estimate_acd_time_to_event(time_inter = trial_start*year, !!!acd_protocol) %>% mutate(run = "Control"),
-    infections_intervention %>% estimate_acd_time_to_event(time_inter = trial_start*year, !!!acd_protocol) %>% mutate(run = "Intervention")
+    inject(infections_control %>% estimate_acd_time_to_event(time_inter = trial_start*year, !!!acd_protocol)) %>% mutate(run = "Control"),
+    inject(infections_intervention %>% estimate_acd_time_to_event(time_inter = trial_start*year, !!!acd_protocol)) %>% mutate(run = "Intervention")
   ) %>%
     prepare_time_to_event_survival(time_inter = trial_start*year, sim_length = sim_length*year)
   
   # Get time-to-event estimates for first infection/case from the second intervention as if doing ACD
   
   tte_acd_2 <- bind_rows(
-    infections_control %>% estimate_acd_time_to_event(time_inter = (trial_start + trial_second_intervention)*year, !!!acd_protocol) %>% mutate(run = "Control"),
-    infections_intervention %>% estimate_acd_time_to_event(time_inter = (trial_start + trial_second_intervention)*year, !!!acd_protocol) %>% mutate(run = "Intervention")
+    inject(infections_control %>% estimate_acd_time_to_event(time_inter = (trial_start + trial_second_intervention)*year, !!!acd_protocol)) %>% mutate(run = "Control"),
+    inject(infections_intervention %>% estimate_acd_time_to_event(time_inter = (trial_start + trial_second_intervention)*year, !!!acd_protocol)) %>% mutate(run = "Intervention")
   ) %>%
     prepare_time_to_event_survival(time_inter = (trial_start + trial_second_intervention)*year, sim_length = sim_length*year)
   
