@@ -18,11 +18,21 @@ rm(list = ls())
 library(tidyverse)
 library(ggpubr)
 
+# Functions
 
-#### trial conditions ####
+source("functions/verbose_detect_event.R")
+
+source("functions/trial_tidy_outputs.R")
+source("functions/trial_analysis.R")
+source("functions/trial_visualisation.R")
+
+# General options
 
 year <- 365
 month <- 30
+
+
+#### trial conditions ####
 
 # General inputs: init_EIR, and
 # total sim size versus pop followed (analyses performed) at trial.
@@ -44,38 +54,24 @@ key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 # Trial name of the simulation we want to analyse
 
 trial_name <- paste0("Seasonal Init EIR ", init_EIR)
+trial_slug <- make_trial_slug(trial_name)
+make_output_dirs()
 
 
-#### data ####
+#### data - infections ####
 
 ## Read the analyses cohort data (age cohort) from previous step
+## Run functions to signal infection/case, at time and overall
 
-analyses_cohort_control <- read.csv(paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_control.csv"))
-analyses_cohort_intervention <- read.csv(paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_intervention.csv"))
-
-
-#### infections/cases ####
-
-## Functions to signal infection/case, at time and overall
-
-source("functions/verbose_infection_state.R")
-
-# Run for each
-
-infections_control <- analyses_cohort_control %>%
+infections_control <- read.csv(paste0("outputs/cohort_data/", trial_slug, "_control.csv")) %>%
   detect_ever_malaria() %>% detect_infection()
-
-infections_intervention <- analyses_cohort_intervention %>%
+infections_intervention <- read.csv(paste0("outputs/cohort_data/", trial_slug, "_intervention.csv")) %>%
   detect_ever_malaria() %>% detect_infection()
 
 
 
-# INCIDENCE / PREVALENCE ----------------------------------------------------------------
+# TRIAL OUTCOMES ----------------------------------------------------------------
 
-
-## Functions to get incidence/prevalence at each timestep
-
-source("functions/verbose_prevalence_incidence.R")
 
 ## Factor levels for outcomes
 
@@ -89,57 +85,34 @@ measures_labels <- c("Infection Prevalence", "Case Prevalence",
 
 #### all estimates ####
 
-## true estimates
+# Define a PCD cross-sectional survey and an ACD routine visit protocol
 
-estimates_control <- infections_control %>%
-  true_realtime_measures() %>% mutate(run = "Control")
+survey_protocol <- list(
+  
+  cross_surveys_in_years = seq(0.5, 6, 0.5)
 
-estimates_intervention <- infections_intervention %>%
-  true_realtime_measures() %>% mutate(run = "Intervention")
+)
 
-## aggregate incidence
+acd_protocol <- list(
+  
+  routine_visits_in_weeks = seq(4, 6*52, 4),
+  days_catchment = 2
 
-estimates_aggr_control <- infections_control %>%
-  aggregate_incidence_period(trial_start = trial_start) %>% mutate(run = "Control")
+)
 
-estimates_aggr_intervention <- infections_intervention %>%
-  aggregate_incidence_period(trial_start = trial_start) %>% mutate(run = "Intervention")
+# Run function for all estimates
 
-## cross-sectional survey prevalence
+trial_results <- analyse_two_arm_trial(
+  
+  infections_control = infections_control,
+  infections_intervention = infections_intervention,
+  trial_start = trial_start,
+  trial_second_intervention = trial_second_intervention,
+  sim_length = sim_length,
+  survey_protocol = survey_protocol,
+  acd_protocol = acd_protocol
 
-estimates_survey_control <- infections_control %>%
-  survey_prevalence(trial_start = trial_start,
-                    cross_surveys_in_years = seq(0.5, 6, 0.5)) %>% # Surveys every 6 months
-  mutate(run = "Control")
-estimates_survey_intervention <- infections_intervention %>%
-  survey_prevalence(trial_start = trial_start,
-                    cross_surveys_in_years = seq(0.5, 6, 0.5)) %>% # Surveys every 6 months
-  mutate(run = "Intervention")
-
-## routine ACD visits
-
-estimates_visits_control <- infections_control %>%
-  visits_incidence(trial_start = trial_start,
-                   routine_visits_in_weeks = seq(4, 6*52, 4), # Surveys every 2 weeks
-                   days_catchment = 2) %>%           # Cases appearing in last 48 h
-  mutate(run = "Control")
-estimates_visits_intervention <- infections_intervention %>%
-  visits_incidence(trial_start = trial_start,
-                   routine_visits_in_weeks = seq(4, 6*52, 4), # Surveys every 2 weeks
-                   days_catchment = 2) %>%           # Cases appearing in last 48 h
-  mutate(run = "Intervention")
-
-## merge
-
-estimates_all <- bind_rows(estimates_control, estimates_intervention,
-                           estimates_aggr_control, estimates_aggr_intervention,
-                           estimates_survey_control, estimates_survey_intervention,
-                           estimates_visits_control, estimates_visits_intervention)
-
-dir.create("outputs_effect_size/", showWarnings = FALSE)
-write.csv(estimates_all, row.names = FALSE,
-          file = paste0("outputs_effect_size/all_outputs_", gsub(" ", "_", tolower(trial_name)), ".csv"))
-
+)
 
 #### quick vis ####
 
