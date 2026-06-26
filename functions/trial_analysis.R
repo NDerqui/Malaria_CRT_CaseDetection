@@ -16,7 +16,7 @@ analyse_two_arm_trial <- function(infections_control, infections_intervention,
                                   # Protocols for PCD and ACD
                                   survey_protocol, acd_protocol) {
   
-  year <- 356
+  year <- 365
   require(rlang)
   
   # Fetch all necessary functions

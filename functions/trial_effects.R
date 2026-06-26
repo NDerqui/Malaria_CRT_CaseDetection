@@ -69,7 +69,7 @@ estimate_relative_effect <- function(df,
 
 # HAZARD RATIO EFFECT SIZE
 
-# INPUT: a survival analysis df, usually after estimate_true_time_to_event() amd prepare_Survival().
+# INPUT: a survival analysis df, usually after estimate_true_time_to_event() and prepare_Survival().
 # OUTPUT: a one-row df with hazard ratio, confidence interval, and p-value.
 
 estimate_hazard_ratio <- function(df,
@@ -89,7 +89,7 @@ estimate_hazard_ratio <- function(df,
   model_formula <- stats::as.formula(
     paste0("survival::Surv(", time_col, ", ", event_col, ") ~ ", model_covars))
   
-  # Run our surmvival model
+  # Run our survival model
   fit <- survival::coxph(model_formula, data = df)
   fit_summary <- summary(fit)
   
