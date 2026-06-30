@@ -140,6 +140,10 @@ save_two_arm_trial_plots <- function(trial_results, trial_slug,
     geom_point(aes(shape = type_measure, size = type_measure)) +
     geom_line() +
     geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
+    scale_shape_manual(breaks = c("True Instantaneous", "Cross-sectional surveys"),
+                       values = c(16:17)) +
+    scale_size_manual(breaks = c("True Instantaneous", "Cross-sectional surveys"),
+                      values = c(1, 4)) +
     scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
     scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
                        labels = 0:sim_length) +
