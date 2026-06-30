@@ -48,6 +48,7 @@ estimate_relative_effect <- function(df,
 
   require(dplyr)
   require(tidyr)
+  require(rlang)
   
   # Make R recognise our columns for the numbers to compare and trial arms
 
