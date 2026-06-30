@@ -114,6 +114,11 @@ trial_results <- analyse_two_arm_trial(
 
 )
 
+# Save all estimates and effect sizes to corresponding folder/file
+
+save_two_arm_trial(trial_results = trial_results, trial_slug = trial_slug)
+
+
 #### quick vis ####
 
 source("functions/verbose_effect_size.R")
