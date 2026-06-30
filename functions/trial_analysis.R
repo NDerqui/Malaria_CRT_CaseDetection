@@ -18,6 +18,7 @@ analyse_two_arm_trial <- function(infections_control, infections_intervention,
   
   year <- 365
   require(rlang)
+  require(dplyr)
   
   # Fetch all necessary functions
   
@@ -122,9 +123,36 @@ analyse_two_arm_trial <- function(infections_control, infections_intervention,
     estimates_all = estimates_all,
     tte_true_1 = tte_true_1,
     tte_true_2 = tte_true_2,
+    tte_acd_1 = tte_acd_1,
     tte_acd_2 = tte_acd_2,
     relative_effect = relative_effect,
     hazard_ratio = hazard_ratio,
     all_effects = bind_rows(relative_effect, hazard_ratio)
   )
+}
+
+
+# DESCRIPTION:
+
+# A function to save all the estimates and effect sizes to corresponding folder/file
+
+save_two_arm_trial <- function(trial_results, trial_slug) {
+  
+  
+  # Create folder structure if not present already
+  source("functions/trial_tidy_outputs.R")
+  make_output_dirs()
+  
+  # Save all estimates and effect sizes to corresponding folder/file
+  write.csv(trial_results$estimates_true, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_true.csv"), row.names = FALSE)
+  write.csv(trial_results$estimates_survey, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_survey.csv"), row.names = FALSE)
+  write.csv(trial_results$estimates_acd, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_acd.csv"), row.names = FALSE)
+  write.csv(trial_results$estimates_all, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_all.csv"), row.names = FALSE)
+  write.csv(trial_results$tte_true_1, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_true_1_intervention.csv"), row.names = FALSE)
+  write.csv(trial_results$tte_true_2, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_true_2_intervention.csv"), row.names = FALSE)
+  write.csv(trial_results$tte_acd_1, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_acd_1_intervention.csv"), row.names = FALSE)
+  write.csv(trial_results$tte_acd_2, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_acd_2_intervention.csv"), row.names = FALSE)
+  write.csv(trial_results$relative_effect, file = paste0("outputs/estimates/effect_size/", trial_slug, "_relative_effect.csv"), row.names = FALSE)
+  write.csv(trial_results$hazard_ratio, file = paste0("outputs/estimates/effect_size/", trial_slug, "_hazard_ratio.csv"), row.names = FALSE)
+  write.csv(trial_results$all_effects, file = paste0("outputs/estimates/effect_size/", trial_slug, "_all_effects.csv"), row.names = FALSE)
 }
