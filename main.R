@@ -72,7 +72,7 @@ trial_name <- paste0("Seasonal Init EIR ", init_EIR)
 ## Functions to set up parameters and run the verbose simulation
 
 source("functions/verbose_set_parameters.R")
-source("functions/verbose_runsim.R")
+source("functions/verbose_simulation.R")
 
 ## Basic parameters
 
@@ -137,8 +137,7 @@ gc()
 
 ## Simple clean to subtract to the cohort we can follow with age.
 
-source("functions/verbose_dataclean_agecohort.R")
-source("functions/verbose_dataclean_trial_sample.R")
+source("functions/verbose_analysis_cohort.R")
 
 # Filter individuals born / with age from snapshot,
 # estimate their age at each timestep and final age (at death or sim end),
@@ -172,8 +171,7 @@ write.csv(analyses_cohort_intervention, row.names = FALSE,
 
 #### vis ####
 
-dir.create("outputs_plots", showWarnings = FALSE)
-source("functions/verbose_vis.R")
+source("functions/verbose_visualisation.R")
 
 # Plot the control (no intervention)
 
