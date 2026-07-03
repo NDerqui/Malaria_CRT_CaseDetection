@@ -7,9 +7,4 @@
 #### JW verbose and other output file
 
 *.csv
-
-#### Plots 
-
-outputs_effect_plots/*
-outputs_plots/*
-.positai
+outputs/*
