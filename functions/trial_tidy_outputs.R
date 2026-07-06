@@ -16,6 +16,7 @@ make_trial_slug <- function(trial_name) {
 make_output_dirs <- function() {
   
   dirs <- c(
+    "outputs/cohort_data",
     "outputs/estimates/prevalence_incidence",
     "outputs/estimates/time_to_event",
     "outputs/estimates/effect_size",
