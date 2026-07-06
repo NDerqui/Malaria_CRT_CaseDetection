@@ -8,3 +8,4 @@
 
 *.csv
 outputs/*
+.positai
