@@ -97,14 +97,14 @@ run_verbose_sim <- function(simparams, sim_length,
   
   # Set a directory to dump the verbose file
   
-  folder <- "outputs_verbose_sims"
+  folder <- "verbose_dump"
   
   dir.create(paste0(folder, "/"), showWarnings = FALSE)
   
   # Set the verbose file name 
   
-  simparams$file_name <- paste0(folder, "/verbose_dumping_", run_note, ".csv")
-  simparams$snapshot_file_name <- paste0(folder, "/verbose_dumping_snapshot_", run_note, ".csv")
+  simparams$file_name <- paste0(folder, "/", run_note, "_full_output.csv")
+  simparams$snapshot_file_name <- paste0(folder, "/", run_note, "_snapshot_age.csv")
   
   
   ## Run simulation
