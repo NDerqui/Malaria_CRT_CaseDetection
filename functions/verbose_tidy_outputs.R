@@ -65,8 +65,13 @@ run_and_clean_verbose <- function(run_note,
   
   analyses_cohort <- df %>%
     get_birth_death() %>%
-    get_age_cohort(age_snapshot = df_age, snapshot_time = verbose_protocol$snapshot_time) %>%
-    do.call(get_enrol_sample, c(list(.), analysis_cohort_protocol))
+    get_age_cohort(age_snapshot = df_age,
+                   snapshot_time = verbose_protocol$snapshot_time)
+  
+  analyses_cohort <- do.call(
+    get_enrol_sample,
+    c(list(df = analyses_cohort), analysis_cohort_protocol)
+  )
   
   
   ## Return strictly necessary
