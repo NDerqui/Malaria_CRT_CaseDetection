@@ -41,8 +41,8 @@ month <- 30
 
 init_EIR <- 25
 
-human_population <- 10000
-trial_size <- 500
+human_population <- 100
+trial_size <- 10
 
 # Set some basics, like length of sim vs length of trial,
 # and when do our interventions start.
@@ -51,10 +51,10 @@ trial_size <- 500
 # (i.e., start the trial on the third year of the sim),
 # and doing two rounds of intervention separated by 3 years.
 
-sim_length <- 9
+sim_length <- 6
 
-trial_start <- 3
-trial_second_intervention <- 3
+trial_start <- 2
+trial_second_intervention <- 2
 
 key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
@@ -88,6 +88,36 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
                                          bednets = TRUE)
 
 ## Run sim
+
+verbose_protocol <- list(
+simparams = baseline_parameters,
+sim_length = sim_length,
+snapshot_time = snapshot_time)
+
+intervention_protocol <- list(
+  key_intervention_time = key_intervention_time,
+  bed_coverage = 0.95)
+
+analysis_cohort_protocol <- list(
+  snapshot_time = snapshot_time,
+  alive_by = trial_start*year,
+  trial_size = trial_size,
+  age_min = 0, age_max = 10)
+
+#
+
+source("functions/trial_tidy_outputs.R")
+source("functions/verbose_tidy_outputs.R")
+
+trial_slug <- make_trial_slug(trial_name = trial_name)
+
+sim_two_arm_trial(trial_slug = trial_slug,
+                  n_power = 10,
+                  verbose_protocol = verbose_protocol,
+                  intervention_protocol = intervention_protocol,
+                  analysis_cohort_protocol = analysis_cohort_protocol)
+
+
 
 # Control arm
 
