@@ -87,116 +87,37 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
                                          treatment = TRUE,
                                          bednets = TRUE)
 
-## Run sim
+## Run sim and clean the data
+
+# Put the options for the verbose run, the intervention and the analysis cohort in lists to pass to the wrapper function.
 
 verbose_protocol <- list(
-simparams = baseline_parameters,
-sim_length = sim_length,
-snapshot_time = snapshot_time)
+  simparams = baseline_parameters,
+  sim_length = sim_length,
+  snapshot_time = snapshot_time)
 
 intervention_protocol <- list(
   key_intervention_time = key_intervention_time,
   bed_coverage = 0.95)
 
 analysis_cohort_protocol <- list(
-  snapshot_time = snapshot_time,
   alive_by = trial_start*year,
   trial_size = trial_size,
   age_min = 0, age_max = 10)
 
-#
+# Running with the wrapper function(s)
 
 source("functions/trial_tidy_outputs.R")
 source("functions/verbose_tidy_outputs.R")
 
 trial_slug <- make_trial_slug(trial_name = trial_name)
+make_output_dirs()
 
 sim_two_arm_trial(trial_slug = trial_slug,
                   n_power = 10,
                   verbose_protocol = verbose_protocol,
                   intervention_protocol = intervention_protocol,
                   analysis_cohort_protocol = analysis_cohort_protocol)
-
-
-
-# Control arm
-
-out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
-                       snapshot_time = snapshot_time,
-                       key_bednet = FALSE, run_note = "control")
-
-df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
-
-df_control$process <- out$process_vector[df_control$process_index]
-df_control$state <- out$state_list[df_control$state_index]
-
-write.csv(df_control, "outputs_verbose_sims/verbose_dumping_control.csv", row.names = FALSE)
-
-# Intervention arm
-
-out <- run_verbose_sim(simparams = baseline_parameters, sim_length = sim_length,
-                       snapshot_time = snapshot_time,
-                       key_bednet = TRUE, key_intervention_time = key_intervention_time,
-                       bed_coverage = 0.95, run_note = "intervention")
-
-df_intervention <- read.csv("outputs_verbose_sims/verbose_dumping_intervention.csv")
-
-df_intervention$process <- out$process_vector[df_intervention$process_index]
-df_intervention$state <- out$state_list[df_intervention$state_index]
-
-write.csv(df_intervention, "outputs_verbose_sims/verbose_dumping_intervention.csv", row.names = FALSE)
-
-## Read the verbose files only
-
-rm(out)
-
-df_control <- read.csv("outputs_verbose_sims/verbose_dumping_control.csv")
-df_control_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_control.csv")
-
-df_intervention <- read.csv("outputs_verbose_sims/verbose_dumping_intervention.csv")
-df_intervention_age <- read.csv("outputs_verbose_sims/verbose_dumping_snapshot_intervention.csv")
-
-gc()
-
-
-
-# CLEAN SIM OUTPUT --------------------------------------------------------
-
-
-#### analyses cohort ####
-
-## Simple clean to subtract to the cohort we can follow with age.
-
-source("functions/verbose_analysis_cohort.R")
-
-# Filter individuals born / with age from snapshot,
-# estimate their age at each timestep and final age (at death or sim end),
-# and sample (say 100).
-
-analyses_cohort_control <- df_control %>%
-  get_birth_death() %>%
-  get_age_cohort(age_snapshot = df_control_age, snapshot_time = snapshot_time) %>%
-  get_enrol_sample(alive_by = trial_start * year, trial_size = trial_size,
-                   age_min = 0, age_max = 10)
-
-analyses_cohort_intervention <- df_intervention %>%
-  get_birth_death() %>%
-  get_age_cohort(age_snapshot = df_intervention_age, snapshot_time = snapshot_time) %>%
-  get_enrol_sample(alive_by = trial_start * year, trial_size = trial_size,
-                   age_min = 0, age_max = 10)
-
-# Clean space
-
-rm(df_control, df_intervention, df_control_age, df_intervention_age)
-gc()
-
-# Save for future
-
-dir.create("outputs_agecohort_data", showWarnings = FALSE)
-write.csv(analyses_cohort_control, row.names = FALSE,
-          file = paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_control.csv"))
-write.csv(analyses_cohort_intervention, row.names = FALSE,
-          file = paste0("outputs_agecohort_data/", gsub(" ", "_", tolower(trial_name)), "_intervention.csv"))
 
 
 #### vis ####
@@ -207,18 +128,18 @@ source("functions/verbose_visualisation.R")
 
 png(filename = paste0("outputs_plots/agecohort_overtime_control_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 5, units = "in", res = 1200)
-plot_verbose_itn(df = analyses_cohort_control,
-                 note = paste0("Control: ", trial_name), sim_length = sim_length,
-                 human_population = human_population, trial_size = trial_size,
-                 bednetstimesteps = seq(0, sim_length, 3)*year)
+read.csv(paste0("outputs/cohort_data/", trial_slug, "_control.csv")) %>%
+  plot_verbose_itn(note = paste0("Control: ", trial_name), sim_length = sim_length,
+                   human_population = human_population, trial_size = trial_size,
+                   bednetstimesteps = seq(0, sim_length, 3)*year)
 dev.off()
 
 # Plot the intervention
 
 png(filename = paste0("outputs_plots/agecohort_overtime_intervention_", gsub(" ", "_", tolower(trial_name)), ".png"),
     width = 8, height = 5, units = "in", res = 1200)
-plot_verbose_itn(df = analyses_cohort_intervention,
-                 note = paste0("Intervention: ", trial_name), sim_length = sim_length,
+read.csv(paste0("outputs/cohort_data/", trial_slug, "_intervention.csv")) %>%
+plot_verbose_itn(note = paste0("Intervention: ", trial_name), sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed")
