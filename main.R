@@ -126,7 +126,7 @@ source("functions/verbose_visualisation.R")
 
 # Plot the control (no intervention)
 
-png(filename = paste0("outputs_plots/agecohort_overtime_control_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_control.png"),
     width = 8, height = 5, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_slug, "_control.csv")) %>%
   plot_verbose_itn(note = paste0("Control: ", trial_name), sim_length = sim_length,
@@ -136,7 +136,7 @@ dev.off()
 
 # Plot the intervention
 
-png(filename = paste0("outputs_plots/agecohort_overtime_intervention_", gsub(" ", "_", tolower(trial_name)), ".png"),
+png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_intervention.png"),
     width = 8, height = 5, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_slug, "_intervention.csv")) %>%
 plot_verbose_itn(note = paste0("Intervention: ", trial_name), sim_length = sim_length,

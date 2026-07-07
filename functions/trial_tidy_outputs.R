@@ -20,6 +20,7 @@ make_output_dirs <- function() {
     "outputs/estimates/prevalence_incidence",
     "outputs/estimates/time_to_event",
     "outputs/estimates/effect_size",
+    "outputs/plots/cohort",
     "outputs/plots/prevalence_incidence",
     "outputs/plots/time_to_event",
     "outputs/plots/effect_size",
