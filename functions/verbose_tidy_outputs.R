@@ -7,6 +7,7 @@
 
 # This function runs verbose sims and cleans the basic output to extract state,
 # then gets the analysis age-cohort to minimise what we need for each simulation.
+# Finally, detect infection states to run all verbose-functions in one step.
 
 run_and_clean_verbose <- function(run_note,
                                   ## Shared verbose sim parameters
@@ -30,6 +31,7 @@ run_and_clean_verbose <- function(run_note,
   
   source("functions/verbose_simulation.R")
   source("functions/verbose_analysis_cohort.R")
+  source("functions/verbose_detect_event.R")
   
   
   ## Run sim
@@ -57,7 +59,7 @@ run_and_clean_verbose <- function(run_note,
   df_age <- read.csv(paste0("verbose_dump/", run_note, "_snapshot_age.csv"))
   
   
-  ## Simple clean to subtract to the cohort we can follow with age.
+  ## Simple clean to subtract to the cohort with age we want to follow.
   
   # Filter individuals born / with age from snapshot,
   # estimate their age at each timestep and final age (at death or sim end),
@@ -72,6 +74,16 @@ run_and_clean_verbose <- function(run_note,
     get_enrol_sample,
     c(list(df = analyses_cohort), analysis_cohort_protocol)
   )
+  
+  
+  ## Detect the infection events
+  
+  # Run all the verbose-related functions in the early stages,
+  # so future analyses are only for trial outcomes and effects.
+  
+  analyses_cohort <- analyses_cohort %>%
+    detect_ever_malaria() %>%
+    detect_infection()
   
   
   ## Return strictly necessary
