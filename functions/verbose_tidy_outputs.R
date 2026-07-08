@@ -135,4 +135,6 @@ sim_two_arm_trial <- function(trial_slug, n_power,
   }) %>%
     write.csv(paste0("outputs/cohort_data/", trial_slug, "_intervention.csv"), row.names = FALSE)
   
+  
+  unlink("verbose_dump/*")
 }
