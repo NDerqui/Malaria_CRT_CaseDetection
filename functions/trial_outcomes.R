@@ -15,18 +15,18 @@ estimate_true_realtime_outcomes <- function(df) {
   
   require(dplyr)
   
-  grouping_vars <- c("timestep", "sim_id")
+  grouping_vars <- c("timestep", "sim")
   
   # Prepare data once before grouped calcs
   # then get prevalence and incidence each timestep
   
   result <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
+    arrange(sim, individual_index, timestep) %>%
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    group_by(individual_index) %>%
+    group_by(sim, individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each timestep calcs
@@ -54,18 +54,18 @@ estimate_true_realtime_outcomes <- function(df) {
            prevalence_infection, prevalence_case,
            incidence_ppd_infection, incidence_ppd_case,
            incidence_ppy_infection, incidence_ppy_case) %>%
-    # Pivot to get one row per timestep/sim_id and per measure
+    # Pivot to get one row per timestep/sim and per measure
     pivot_longer(-all_of(grouping_vars),
                  names_to = "measure", values_to = "value") %>%
     # Create mean and 95%CI across simulations
-    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim_id")]), "measure"))) %>%
+    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim")]), "measure"))) %>%
     mutate(mean = mean(value, na.rm = TRUE),
-           lower_ci = quantile(value, probs = 0.025, na.rm = TRUE),
-           upper_ci = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
+           lower_95quant = quantile(value, probs = 0.025, na.rm = TRUE),
+           upper_95quant = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
     filter(row_number() == 1) %>% ungroup() %>%
     # Final cleaning
     mutate(type_measure = "True Instantaneous") %>%
-    select(timestep, type_measure, measure, mean, lower_ci, upper_ci)
+    select(timestep, type_measure, measure, mean, lower_95quant, upper_95quant)
   
   return(result)
 }
@@ -76,18 +76,18 @@ estimate_true_realtime_outcomes_by_age <- function(df) {
   
   require(dplyr)
   
-  grouping_vars <- c("timestep", "sim_id", "age_at_time_year")
+  grouping_vars <- c("timestep", "sim", "age_at_time_year")
   
   # Prepare data once before grouped calcs
   # then get prevalence and incidence each timestep
   
   result <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
+    arrange(sim, individual_index, timestep) %>%
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    group_by(individual_index) %>%
+    group_by(sim, individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each timestep calcs
@@ -115,18 +115,18 @@ estimate_true_realtime_outcomes_by_age <- function(df) {
            prevalence_infection, prevalence_case,
            incidence_ppd_infection, incidence_ppd_case,
            incidence_ppy_infection, incidence_ppy_case) %>%
-    # Pivot to get one row per timestep/sim_id and per measure
+    # Pivot to get one row per timestep/sim and per measure
     pivot_longer(-all_of(grouping_vars),
                  names_to = "measure", values_to = "value") %>%
     # Create mean and 95%CI across simulations
-    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim_id")]), "measure"))) %>%
+    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim")]), "measure"))) %>%
     mutate(mean = mean(value, na.rm = TRUE),
-           lower_ci = quantile(value, probs = 0.025, na.rm = TRUE),
-           upper_ci = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
+           lower_95quant = quantile(value, probs = 0.025, na.rm = TRUE),
+           upper_95quant = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
     filter(row_number() == 1) %>% ungroup() %>%
     # Final cleaning
     mutate(type_measure = "True Instantaneous") %>%
-    select(timestep, age_at_time_year, type_measure, measure, mean, lower_ci, upper_ci)
+    select(timestep, age_at_time_year, type_measure, measure, mean, lower_95quant, upper_95quant)
   
   return(result)
 }
@@ -176,15 +176,15 @@ estimate_true_aggregate_incidence <- function(df, trial_start,
   # Prepare data once before grouped calcs
   # then get aggregated incidence for each period
   
-  grouping_vars <- c("period", "sim_id")
+  grouping_vars <- c("period", "sim")
   
   result <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
+    arrange(sim, individual_index, timestep) %>%
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    group_by(individual_index) %>%
+    group_by(sim, individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each period calcs
@@ -205,23 +205,23 @@ estimate_true_aggregate_incidence <- function(df, trial_start,
     mutate(timestep = max(timestep)) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
-    select(timestep, sim_id, period, period_label,
+    select(timestep, sim, period, period_label,
            n, person_days_at_risk,
            new_infections, new_cases,
            incidence_ppd_infection, incidence_ppd_case,
            incidence_ppy_infection, incidence_ppy_case) %>%
-    # Pivot to get one row per timestep/sim_id and per measure
+    # Pivot to get one row per timestep/sim and per measure
     pivot_longer(-c(all_of(grouping_vars), period_label, timestep),
                  names_to = "measure", values_to = "value") %>%
     # Create mean and 95%CI across simulations
-    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim_id")]), "measure"))) %>%
+    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim")]), "measure"))) %>%
     mutate(mean = mean(value, na.rm = TRUE),
-           lower_ci = quantile(value, probs = 0.025, na.rm = TRUE),
-           upper_ci = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
+           lower_95quant = quantile(value, probs = 0.025, na.rm = TRUE),
+           upper_95quant = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
     filter(row_number() == 1) %>% ungroup() %>%
     # Final cleaning
     mutate(type_measure = paste0("True, aggregate over ", followup_period_year*12, " mos.")) %>%
-    select(timestep, period, period_label, type_measure, measure, mean, lower_ci, upper_ci)
+    select(timestep, period, period_label, type_measure, measure, mean, lower_95quant, upper_95quant)
   
   return(result)
   
@@ -248,11 +248,11 @@ estimate_survey_prevalence <- function(df, cross_surveys_in_years, trial_start) 
   # Prepare data once before grouped calcs
   # then get prevalence each timestep
   
-  grouping_vars <- c("timestep", "sim_id")
+  grouping_vars <- c("timestep", "sim")
   
   result <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
+    arrange(sim, individual_index, timestep) %>%
     ## Ready for the each timestep calcs
     # Filter to each timestep and remove everyone dead by then (for denom)
     group_by(across(all_of(grouping_vars))) %>%
@@ -268,18 +268,18 @@ estimate_survey_prevalence <- function(df, cross_surveys_in_years, trial_start) 
     filter(row_number() == 1) %>% ungroup() %>%
     select(all_of(grouping_vars), n,
            infections, cases, prevalence_infection, prevalence_case) %>%
-    # Pivot to get one row per timestep/sim_id and per measure
+    # Pivot to get one row per timestep/sim and per measure
     pivot_longer(-all_of(grouping_vars),
                  names_to = "measure", values_to = "value") %>%
     # Create mean and 95%CI across simulations
-    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim_id")]), "measure"))) %>%
+    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim")]), "measure"))) %>%
     mutate(mean = mean(value, na.rm = TRUE),
-           lower_ci = quantile(value, probs = 0.025, na.rm = TRUE),
-           upper_ci = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
+           lower_95quant = quantile(value, probs = 0.025, na.rm = TRUE),
+           upper_95quant = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
     filter(row_number() == 1) %>% ungroup() %>%
     # Final cleaning
     mutate(type_measure = "Cross-sectional surveys") %>%
-    select(timestep, type_measure, measure, mean, lower_ci, upper_ci)
+    select(timestep, type_measure, measure, mean, lower_95quant, upper_95quant)
   
   return(result)
 }
@@ -297,11 +297,11 @@ estimate_acd_incidence <- function(df, trial_start,
   
   df <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
+    arrange(sim, individual_index, timestep) %>%
     ## For incidence calcs:
     # get no. at risk at each timestep considering prev timstep.
     # No at risk of incident infection won't include infected in previous timestep.
-    group_by(individual_index) %>%
+    group_by(sim, individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup()
     
@@ -359,7 +359,7 @@ estimate_acd_incidence <- function(df, trial_start,
   # Prepare data once before grouped calcs
   # then get aggregated incidence for each period
   
-  grouping_vars <- c("period", "sim_id")
+  grouping_vars <- c("period", "sim")
   
   result <- df %>%
     ## Ready for the each period calcs
@@ -380,26 +380,26 @@ estimate_acd_incidence <- function(df, trial_start,
     mutate(timestep = max(timestep)) %>%
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
-    select(timestep, sim_id, period, period_label,
+    select(timestep, sim, period, period_label,
            n, person_days_at_risk,
            new_infections, new_cases,
            incidence_ppd_infection, incidence_ppd_case,
            incidence_ppy_infection, incidence_ppy_case) %>%
-    # Pivot to get one row per timestep/sim_id and per measure
+    # Pivot to get one row per timestep/sim and per measure
     pivot_longer(-c(all_of(grouping_vars), period_label, timestep),
                  names_to = "measure", values_to = "value") %>%
     # Create mean and 95%CI across simulations
-    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim_id")]), "measure"))) %>%
+    group_by(across(c(all_of(grouping_vars[!(grouping_vars == "sim")]), "measure"))) %>%
     mutate(mean = mean(value, na.rm = TRUE),
-           lower_ci = quantile(value, probs = 0.025, na.rm = TRUE),
-           upper_ci = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
+           lower_95quant = quantile(value, probs = 0.025, na.rm = TRUE),
+           upper_95quant = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
     filter(row_number() == 1) %>% ungroup() %>%
     # Final cleaning
     mutate(type_measure = paste(paste0("ACD every ", routine_visits_in_weeks[1], " weeks"),
                                 paste0("with ", days_catchment, " days window,"),
                                 paste("aggr. over ", followup_period_year*12, " mos."),
                                 sep = "\n")) %>%
-    select(timestep, period, period_label, type_measure, measure, mean, lower_ci, upper_ci)
+    select(timestep, period, period_label, type_measure, measure, mean, lower_95quant, upper_95quant)
   
   return(result)
 }
