@@ -41,8 +41,8 @@ month <- 30
 
 init_EIR <- 25
 
-human_population <- 100
-trial_size <- 10
+human_population <- 10000
+trial_size <- 200
 
 # Set some basics, like length of sim vs length of trial,
 # and when do our interventions start.
@@ -72,7 +72,6 @@ trial_name <- paste0("Seasonal Init EIR ", init_EIR)
 ## Functions to set up parameters and run the verbose simulation
 
 source("functions/verbose_set_parameters.R")
-source("functions/verbose_simulation.R")
 
 ## Basic parameters
 
@@ -114,7 +113,7 @@ trial_slug <- make_trial_slug(trial_name = trial_name)
 make_output_dirs()
 
 sim_two_arm_trial(trial_slug = trial_slug,
-                  n_power = 10,
+                  n_power = 20,
                   verbose_protocol = verbose_protocol,
                   intervention_protocol = intervention_protocol,
                   analysis_cohort_protocol = analysis_cohort_protocol)
