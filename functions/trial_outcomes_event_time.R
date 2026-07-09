@@ -22,7 +22,7 @@ estimate_true_time_to_event <- function(df, time_inter) {
     # which will automatically delete anybody dead at time_intervention
     filter(timestep >= time_inter) %>%
     # For each individual, get the smallest time to a new infection or new case
-    group_by(individual_index) %>%
+    group_by(sim, individual_index) %>%
     mutate(
       time_to_infection = if (any(new_infection_at_time)) {min(time_event[new_infection_at_time], na.rm = TRUE)} else {NA_real_},
       time_to_case = if (any(new_case_at_time)) {min(time_event[new_case_at_time], na.rm = TRUE)} else {NA_real_}) %>%
@@ -38,7 +38,7 @@ estimate_true_time_to_event <- function(df, time_inter) {
     filter(row_number() == 1) %>%
     ungroup() %>%
     # Clean
-    select(
+    select(sim,
       # Basics of each individual
       individual_index, received_treat, received_net, removed_net,
       # Info on death (for censoring later)
@@ -91,7 +91,7 @@ estimate_acd_time_to_event <- function(df, time_inter,
     # which will automatically delete anybody dead at time_intervention
     filter(timestep >= time_inter) %>%
     # For each individual, get the smallest time to a new infection or new case
-    group_by(individual_index) %>%
+    group_by(sim, individual_index) %>%
     mutate(
       time_to_infection = if (any(new_infection_at_time)) {min(time_event[new_infection_at_time], na.rm = TRUE)} else {NA_real_},
       time_to_case = if (any(new_case_at_time)) {min(time_event[new_case_at_time], na.rm = TRUE)} else {NA_real_}) %>%
@@ -107,7 +107,7 @@ estimate_acd_time_to_event <- function(df, time_inter,
     filter(row_number() == 1) %>%
     ungroup() %>%
     # Clean
-    select(
+    select(sim,
       # Basics of each individual
       individual_index, received_treat, received_net, removed_net,
       # Info on death (for censoring later)
