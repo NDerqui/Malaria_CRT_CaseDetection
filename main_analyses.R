@@ -20,8 +20,6 @@ library(ggpubr)
 
 # Functions
 
-source("functions/verbose_detect_event.R")
-
 source("functions/trial_tidy_outputs.R")
 source("functions/trial_analysis.R")
 source("functions/trial_visualisation.R")
@@ -32,6 +30,7 @@ year <- 365
 month <- 30
 
 
+
 # TRIAL CONDITIONS --------------------------------------------------------
 
 # General inputs: init_EIR, total sim size, and pop followed in trial.
@@ -39,14 +38,14 @@ month <- 30
 init_EIR <- 25
 
 human_population <- 10000
-trial_size <- 100
+trial_size <- 200
 
 # Length of sim, length of trial, time of start interventions.
 
-sim_length <- 9
+sim_length <- 6
 
-trial_start <- 3
-trial_second_intervention <- 3
+trial_start <- 2
+trial_second_intervention <- 2
 
 key_intervention_time <- c(trial_start, trial_start + trial_second_intervention)
 
@@ -61,23 +60,10 @@ trial_title <- paste0("Simulated a ", human_population,
 make_output_dirs()
 
 
-# DATA - INFECTIONS -------------------------------------------------------
-
-## Read the analyses cohort data (age cohort)
-## Run functions to signal infection/case, at time and overall.
-
-infections_control <- read.csv(paste0("outputs/cohort_data/", trial_slug, "_control.csv")) %>%
-  detect_ever_malaria() %>%
-  detect_infection()
-
-infections_intervention <- read.csv(paste0("outputs/cohort_data/", trial_slug, "_intervention.csv")) %>%
-  detect_ever_malaria() %>%
-  detect_infection()
-
 
 # TRIAL OUTCOMES ----------------------------------------------------------
 
-# Define a PCD cross-sectional survey and an ACD routine visit protocol.
+# Define a PCD cross-sectional survey and an ACD routine visit protocol
 
 survey_protocol <- list(
   cross_surveys_in_years = seq(0.5, 6, 0.5)
@@ -88,11 +74,10 @@ acd_protocol <- list(
   days_catchment = 2
 )
 
-# Run function for all estimates.
+# Run function for all estimates just from the trial name and protocols defined above
 
 trial_results <- analyse_two_arm_trial(
-  infections_control = infections_control,
-  infections_intervention = infections_intervention,
+  trial_slug = trial_slug,
   trial_start = trial_start,
   trial_second_intervention = trial_second_intervention,
   sim_length = sim_length,

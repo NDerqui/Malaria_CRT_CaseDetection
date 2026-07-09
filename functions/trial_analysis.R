@@ -9,7 +9,7 @@
 # (prevalence, incidence, time-to-event), true or with PCD/ACD protocols,
 # and protective effect size of intervention.
 
-analyse_two_arm_trial <- function(infections_control, infections_intervention,
+analyse_two_arm_trial <- function(trial_slug,
                                   # Trial and sim characteristics
                                   trial_start, trial_second_intervention,
                                   sim_length,
@@ -25,6 +25,13 @@ analyse_two_arm_trial <- function(infections_control, infections_intervention,
   source("functions/trial_outcomes.R")
   source("functions/trial_outcomes_event_time.R")
   source("functions/trial_effects.R")
+  
+  ## DATA
+  
+  # Read the data just with the trial name
+  
+  infections_control <- read.csv(paste0("outputs/cohort_data/", trial_slug, "_control.csv"))
+  infections_intervention <- read.csv(paste0("outputs/cohort_data/", trial_slug, "_intervention.csv"))
   
   ## OUTCOMES (prev and inc)
   
