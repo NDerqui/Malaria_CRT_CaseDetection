@@ -86,6 +86,7 @@ trial_results <- analyse_two_arm_trial(
 )
 
 
+
 # SAVE OUTPUTS ------------------------------------------------------------
 
 # Save all estimates and effect sizes to corresponding folder/file.
