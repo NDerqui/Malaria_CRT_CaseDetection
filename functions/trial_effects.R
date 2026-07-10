@@ -75,7 +75,7 @@ estimate_relative_effect <- function(df,
            lower_95quant = quantile(effect, probs = 0.025, na.rm = TRUE),
            upper_95quant = quantile(effect, probs = 0.975, na.rm = TRUE)) %>%
     filter(row_number() == 1) %>% ungroup() %>%
-    select(all_of(outcome_cols[!(outcome_cols == "sim")]), effect, mean, lower_95quant, upper_95quant)
+    select(all_of(outcome_cols[!(outcome_cols == "sim")]), mean, lower_95quant, upper_95quant)
   
   return(result)
 }
