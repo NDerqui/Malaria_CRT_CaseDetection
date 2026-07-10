@@ -74,6 +74,29 @@ analyse_two_arm_trial <- function(trial_slug,
     estimate_relative_effect() %>%
     filter(!is.na(effect) & is.numeric(effect))
   
+  ## SUMARIES (prev and inc across simulations)
+  
+  # Now that we have calculated effect for each simulation using each sim's prev and inc,
+  # we can now get summaries (mean and 95%CI) across simulations for each measure and timestep
+  
+  possible_grouping_vars <- c("run", "sim", "timestep", "type_measure", "period", "period_label")
+  
+  estimates_all <- estimates_all %>%
+    # Pivot to get one row per timestep/sim and per measure
+    pivot_longer(-any_of(possible_grouping_vars),
+                 names_to = "measure", values_to = "value") %>%
+    # Create mean and 95%CI across simulations
+    group_by(across(c(all_of(possible_grouping_vars[!(possible_grouping_vars == "sim")]), "measure"))) %>%
+    mutate(mean = mean(value, na.rm = TRUE),
+           lower_95quant = quantile(value, probs = 0.025, na.rm = TRUE),
+           upper_95quant = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
+    filter(row_number() == 1) %>% ungroup() %>%
+    select(all_of(possible_grouping_vars[!(possible_grouping_vars == "sim")]), mean, lower_95quant, upper_95quant)
+  
+  estimates_true <- estimates_all %>% filter(grepl("True", type_measure)) %>% select_if(function(x){!all(is.na(x))})
+  estimates_acd <- estimates_all %>% filter(grepl("ACD", type_measure)) %>% select_if(function(x){!all(is.na(x))})
+  estimates_survey <- estimates_all %>% filter(grepl("Cross", type_measure)) %>% select_if(function(x){!all(is.na(x))})
+  
   ## OUTCOMES (time to event)
   
   # Get true time-to-event estimates for first infection/case from the first intervention
@@ -109,15 +132,26 @@ analyse_two_arm_trial <- function(trial_slug,
     prepare_time_to_event_survival(time_inter = (trial_start + trial_second_intervention)*year, sim_length = sim_length*year)
   
   # Put all estimates together and calculate hazard ratios
+  # Once we have all HR for all sim, estimate summaries across sims
   
   hazard_ratio <- bind_rows(
-    estimate_hazard_ratio(tte_true_1, "time_to_case", "ever_case") %>% mutate(type_measure = "True Time-to-event", timestep = (trial_start + trial_second_intervention)*year),
-    estimate_hazard_ratio(tte_true_2, "time_to_case", "ever_case") %>% mutate(type_measure = "True Time-to-event", timestep = sim_length*year),
-    estimate_hazard_ratio(tte_acd_1, "time_to_case", "ever_case") %>% mutate(type_measure = "Time-to-event w/ ACD visits", timestep = (trial_start + trial_second_intervention)*year),
-    estimate_hazard_ratio(tte_acd_2, "time_to_case", "ever_case") %>% mutate(type_measure = "Time-to-event w/ ACD visits", timestep = sim_length*year)
+    estimate_hazard_ratio_by_sim(tte_true_1, "time_to_case", "ever_case") %>% mutate(type_measure = "True Time-to-event", timestep = (trial_start + trial_second_intervention)*year),
+    estimate_hazard_ratio_by_sim(tte_true_2, "time_to_case", "ever_case") %>% mutate(type_measure = "True Time-to-event", timestep = sim_length*year),
+    estimate_hazard_ratio_by_sim(tte_acd_1, "time_to_case", "ever_case") %>% mutate(type_measure = "Time-to-event w/ ACD visits", timestep = (trial_start + trial_second_intervention)*year),
+    estimate_hazard_ratio_by_sim(tte_acd_2, "time_to_case", "ever_case") %>% mutate(type_measure = "Time-to-event w/ ACD visits", timestep = sim_length*year)
   ) %>%
     mutate(measure = "Case Hazard Ratio",
-           effect = 1 - hazard_ratio)
+           effect = 1 - hazard_ratio) %>%
+    # Create mean and 95%CI across simulations
+    group_by(across(c("type_measure", "measure", "timestep"))) %>%
+    mutate(mean = mean(effect, na.rm = TRUE),
+           lower_95quant = quantile(effect, probs = 0.025, na.rm = TRUE),
+           upper_95quant = quantile(effect, probs = 0.975, na.rm = TRUE),
+           power_any = mean(significant_any, na.rm = TRUE),
+           power_benefit = mean(significant_benefit, na.rm = TRUE),
+           n_sim = n_distinct(sim)) %>%
+    filter(row_number() == 1) %>% ungroup() %>%
+    select(type_measure, measure, timestep, mean, lower_95quant, upper_95quant, power_any, power_benefit, n_sim)
   
   ## SAVE
   

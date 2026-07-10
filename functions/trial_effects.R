@@ -21,7 +21,7 @@ tidy_outcomes_for_effect <- function(df,
                                               "incidence_ppy_infection", "incidence_ppy_case"),
                                  measures_labels = c("Infection Prevalence", "Case Prevalence",
                                                      "Infection Incidence p.p.day", "Case Incidence p.p.day",
-                                                     "Infection Incidence p.p.yea", "Case Incidence p.p.yea"))
+                                                     "Infection Incidence p.p.year", "Case Incidence p.p.year"))
   {
   
   require(dplyr)
@@ -30,7 +30,8 @@ tidy_outcomes_for_effect <- function(df,
   df <- df %>%
     select(-any_of(c("n", "person_days_at_risk", "infections", "cases",
                      "new_infections", "new_cases", "period", "period_label"))) %>%
-    pivot_longer(-c(timestep, type_measure, run), names_to = "measure", values_to = "value") %>%
+    pivot_longer(-c(timestep, sim, type_measure, run),
+                 names_to = "measure", values_to = "value") %>%
     mutate(measure = factor(measure, levels = measures, labels = measures_labels))
   
   return(df)
@@ -44,7 +45,7 @@ tidy_outcomes_for_effect <- function(df,
 estimate_relative_effect <- function(df,
                                 value_col = "value", arm_col = "run",
                                 control = "Control", intervention = "Intervention",
-                                outcome_cols = c("type_measure", "measure", "timestep")) {
+                                outcome_cols = c("type_measure", "measure", "timestep", "sim")) {
 
   require(dplyr)
   require(tidyr)
@@ -64,6 +65,17 @@ estimate_relative_effect <- function(df,
       effect = 1 - .data[[intervention]] / .data[[control]]
     ) %>%
     mutate(effect = as.numeric(effect))
+  
+  # Now that we have effect size by sim, get mean and quantiles across simulations
+  
+  result <- result %>%
+    # Create mean and 95%CI across simulations
+    group_by(across(all_of(outcome_cols[!(outcome_cols == "sim")]))) %>%
+    mutate(mean = mean(effect, na.rm = TRUE),
+           lower_95quant = quantile(effect, probs = 0.025, na.rm = TRUE),
+           upper_95quant = quantile(effect, probs = 0.975, na.rm = TRUE)) %>%
+    filter(row_number() == 1) %>% ungroup() %>%
+    select(all_of(outcome_cols[!(outcome_cols == "sim")]), effect, mean, lower_95quant, upper_95quant)
   
   return(result)
 }
@@ -104,5 +116,29 @@ estimate_hazard_ratio <- function(df,
     conf_high = fit_summary$conf.int[arm_row, "upper .95"],
     p_value = fit_summary$coefficients[arm_row, "Pr(>|z|)"],
     row.names = NULL
-  ))
+  ) %>% # Add signaling for significance of the hazard ratio
+    mutate(
+      significant_any = conf_high < 1 | conf_low > 1,
+      significant_benefit = conf_high < 1
+    ))
+}
+
+# Above works when there are not multiple simulations,
+# so use below wrapper when there are!
+
+estimate_hazard_ratio_by_sim <- function(df,
+                                         time_col, event_col,
+                                         arm_col = "run", control = "Control",
+                                         covariates = NULL) {
+  require(dplyr)
+  
+  result <- df %>%
+    group_by(sim) %>%
+    group_modify(~ estimate_hazard_ratio(
+      df = .x, time_col = time_col, event_col = event_col,
+      arm_col = arm_col, control = control, covariates = covariates
+    )) %>%
+    ungroup()
+  
+  return(result)
 }
