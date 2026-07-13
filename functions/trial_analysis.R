@@ -41,8 +41,8 @@ analyse_two_arm_trial <- function(trial_slug,
   estimates_true <- bind_rows(
     infections_control %>% estimate_true_realtime_outcomes() %>% mutate(run = "Control"),
     infections_intervention %>% estimate_true_realtime_outcomes() %>% mutate(run = "Intervention"),
-    infections_control %>% estimate_true_aggregate_incidence(trial_start = trial_start) %>% mutate(run = "Control"),
-    infections_intervention %>% estimate_true_aggregate_incidence(trial_start = trial_start) %>% mutate(run = "Intervention")
+    infections_control %>% estimate_true_aggregate_incidence() %>% mutate(run = "Control"),
+    infections_intervention %>% estimate_true_aggregate_incidence() %>% mutate(run = "Intervention")
   )
   
   # Get estimates as if measured with PCD:

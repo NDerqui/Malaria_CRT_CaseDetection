@@ -115,7 +115,7 @@ estimate_true_realtime_outcomes_by_age <- function(df) {
 # Aggregates incident infections/cases over longer follow-up windows, such as
 # 6 months or 1 year, instead of estimating incidence at each timestep.
 
-estimate_true_aggregate_incidence <- function(df, trial_start,
+estimate_true_aggregate_incidence <- function(df, sim_start = 0,
                                        followup_period_year = 1,
                                        followup_end = max(df$timestep, na.rm = TRUE)) {
   
@@ -126,7 +126,7 @@ estimate_true_aggregate_incidence <- function(df, trial_start,
   
   # IMP: followup period passed as year measure, i.e. 6 month = 0.5 year
   
-  number_periods <- round((followup_end - trial_start*year) / (followup_period_year*year))
+  number_periods <- round((followup_end - sim_start*year) / (followup_period_year*year))
   
   periods <- data.frame(period = 1:number_periods,
                         period_label = paste0(
@@ -141,12 +141,13 @@ estimate_true_aggregate_incidence <- function(df, trial_start,
   followup_period_days <- round(followup_period_year * year)
   
   df <- df %>%
-    # Only follow up from trial start
-    filter(timestep >= trial_start*year) %>%
+    # Because this is true estimates, analyse all from sim_start
+    # (although possible to only follow after trial start)
+    filter(timestep >= sim_start*year) %>%
     # Getting period for each timestep
     mutate(
       period = pmin(
-        floor((timestep - trial_start*year)/followup_period_days) + 1, # Add a one so that periods don't start at zero
+        floor((timestep - sim_start*year)/followup_period_days) + 1, # Add a one so that periods don't start at zero
         number_periods # pmin so that last timestep doesn't get assigned to other period out of a bad denominator
       )
     ) %>% merge(periods)
