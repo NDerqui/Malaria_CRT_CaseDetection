@@ -81,11 +81,21 @@ analyse_two_arm_trial <- function(trial_slug,
   # we can now get summaries (mean and 95%CI) across simulations for each measure and timestep
   
   possible_grouping_vars <- c("run", "type_measure", "sim", "timestep", "period", "period_label")
+  measures <- c("prevalence_infection", "prevalence_case",
+                "incidence_ppd_infection", "incidence_ppd_case",
+                "incidence_ppy_infection", "incidence_ppy_case")
+  measures_labels <- c("Infection Prevalence", "Case Prevalence",
+                       "Infection Incidence p.p.day", "Case Incidence p.p.day",
+                       "Infection Incidence p.p.year", "Case Incidence p.p.year")
   
   estimates_all <- estimates_all %>%
+    select(-any_of(c("n", "person_days_at_risk", "infections", "cases",
+                     "new_infections", "new_cases"))) %>%
     # Pivot to get one row per timestep/sim and per measure
     pivot_longer(-any_of(possible_grouping_vars),
                  names_to = "measure", values_to = "value") %>%
+    # Refactor measure to have a more readable label for plotting
+    mutate(measure = factor(measure, levels = measures, labels = measures_labels)) %>%
     # Create mean and 95%CI across simulations
     group_by(across(c(all_of(possible_grouping_vars[!(possible_grouping_vars == "sim")]), "measure"))) %>%
     mutate(mean = mean(value, na.rm = TRUE),
