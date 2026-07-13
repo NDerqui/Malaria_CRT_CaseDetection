@@ -33,6 +33,7 @@ month <- 30
 
 # TRIAL CONDITIONS --------------------------------------------------------
 
+
 # General inputs: init_EIR, total sim size, and pop followed in trial.
 
 init_EIR <- 25
@@ -63,6 +64,7 @@ make_output_dirs()
 
 # TRIAL OUTCOMES ----------------------------------------------------------
 
+
 # Define a PCD cross-sectional survey and an ACD routine visit protocol
 
 survey_protocol <- list(
@@ -84,10 +86,12 @@ trial_results <- analyse_two_arm_trial(
   survey_protocol = survey_protocol,
   acd_protocol = acd_protocol
 )
+gc()
 
 
 
 # SAVE OUTPUTS ------------------------------------------------------------
+
 
 # Save all estimates and effect sizes to corresponding folder/file.
 
