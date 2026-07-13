@@ -80,7 +80,7 @@ analyse_two_arm_trial <- function(trial_slug,
   # Now that we have calculated effect for each simulation using each sim's prev and inc,
   # we can now get summaries (mean and 95%CI) across simulations for each measure and timestep
   
-  possible_grouping_vars <- c("run", "sim", "timestep", "type_measure", "period", "period_label")
+  possible_grouping_vars <- c("run", "type_measure", "sim", "timestep", "period", "period_label")
   
   estimates_all <- estimates_all %>%
     # Pivot to get one row per timestep/sim and per measure
@@ -92,7 +92,7 @@ analyse_two_arm_trial <- function(trial_slug,
            lower_95quant = quantile(value, probs = 0.025, na.rm = TRUE),
            upper_95quant = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
     filter(row_number() == 1) %>% ungroup() %>%
-    select(all_of(possible_grouping_vars[!(possible_grouping_vars == "sim")]), mean, lower_95quant, upper_95quant)
+    select(all_of(possible_grouping_vars[!(possible_grouping_vars == "sim")]), measure, mean, lower_95quant, upper_95quant)
   
   estimates_true <- estimates_all %>% filter(grepl("True", type_measure)) %>% select_if(function(x){!all(is.na(x))})
   estimates_acd <- estimates_all %>% filter(grepl("ACD", type_measure)) %>% select_if(function(x){!all(is.na(x))})
