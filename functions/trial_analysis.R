@@ -72,7 +72,8 @@ analyse_two_arm_trial <- function(trial_slug,
   relative_effect <- estimates_all %>%
     tidy_outcomes_for_effect() %>%
     estimate_relative_effect() %>%
-    filter(!is.na(effect) & is.numeric(effect))
+    mutate(mean = ifelse(is.nan(mean), NA, ifelse(is.numeric(mean), mean, NA))) %>%
+    filter(!is.na(mean) & is.numeric(mean))
   
   ## SUMARIES (prev and inc across simulations)
   
