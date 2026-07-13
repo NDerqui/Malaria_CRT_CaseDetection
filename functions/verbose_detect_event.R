@@ -2,6 +2,7 @@
 # INPUT: a df result of a verbose simulation, or from an age-cohort df.
 # OUTPUT: a df with new infections or cases flagged (still one obs per time per person).
 
+
 # DESCRIPTION:
 
 # First, functions to detect if an indv has ever been infected / had a clinical infection.

@@ -2,6 +2,7 @@
 # INPUT: Basic info, like sim_length, init_EIR, etc.
 # OUTPUT: Setting background parameters for running malariasim.
 
+
 # DESCRIPTION:
 
 # This function sets all basic parameters for malariasim:

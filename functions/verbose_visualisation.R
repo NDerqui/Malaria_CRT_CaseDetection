@@ -2,6 +2,7 @@
 # INPUT: a df result of a verbose simulation, or from an age-cohort df.
 # OUTPUT: a plot tracking each individual's state over time.
 
+
 # DESCRIPTION:
 
 # Functions to do some basic plots of verbose sims, to understand

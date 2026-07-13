@@ -1,4 +1,12 @@
-# functions/trial_visualisation.R
+
+# INPUT: df(s) from the different trial analyses' outcomes.
+# OUTPUT: plot(s) tracking each outcome and effect size.
+
+
+# DESCRIPTION:
+
+# Functions to do some basic plots of verbose sims, to understand
+# what we can track (individual state over time).
 
 save_plot <- function(plot, filename, width = 12, height = 8) {
   png(filename = filename, width = width, height = height, units = "in", res = 1200)
