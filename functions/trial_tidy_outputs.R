@@ -9,7 +9,11 @@
 
 make_trial_slug <- function(trial_name) {
   
-  gsub(" ", "_", tolower(trial_name))
+  trial_name %>%
+    trimws() %>%
+    tolower() %>%
+    gsub("[^a-z0-9]+", "_", .) %>%
+    gsub("^_|_$", "", .)
 
 }
 
@@ -17,9 +21,13 @@ make_output_dirs <- function() {
   
   dirs <- c(
     "outputs/cohort_data",
+    "outputs/metadata",
+    
     "outputs/estimates/prevalence_incidence",
     "outputs/estimates/time_to_event",
     "outputs/estimates/effect_size",
+    "outputs/estimates/protocol_tests",
+    
     "outputs/plots/cohort",
     "outputs/plots/prevalence_incidence",
     "outputs/plots/time_to_event",
