@@ -21,6 +21,7 @@ library(ggpubr)
 # Functions
 
 source("functions/trial_tidy_outputs.R")
+source("functions/trial_metadata.R")
 source("functions/trial_analysis.R")
 source("functions/trial_visualisation.R")
 
@@ -34,29 +35,22 @@ month <- 30
 # TRIAL CONDITIONS --------------------------------------------------------
 
 
-# General inputs: init_EIR, total sim size, and pop followed in trial.
+# Get the general conditions from the metadata, which we load with trial name
 
-init_EIR <- 25
+trial_name <- "High transmission test for workflow"
+metadata <- load_trial_metadata(trial_name)
 
-human_population <- 10000
-trial_size <- 200
+trial_id <- metadata$trial_id
+trial_slug <- metadata$trial_slug
 
-# Length of sim, length of trial, time of start interventions.
+sim_length <- metadata$simulation$sim_length
+trial_start <- metadata$trial$trial_start
+trial_second_intervention <- metadata$trial$trial_second_intervention
 
-sim_length <- 6
+human_population <- metadata$simulation$human_population
+trial_size <- metadata$cohort$trial_size
 
-trial_start <- 2
-trial_second_intervention <- 2
-
-key_intervention_time <- c(trial_start, trial_start + trial_second_intervention)
-
-# Trial name of the simulation we want to analyse
-
-trial_name <- paste0("Seasonal Init EIR ", init_EIR)
-trial_slug <- make_trial_slug(trial_name)
-trial_title <- paste0("Simulated a ", human_population,
-                      " population, Sampled ", trial_size,
-                      " for trial, ", trial_name)
+# Ensure we have output dirs
 
 make_output_dirs()
 

@@ -99,7 +99,7 @@ run_and_clean_verbose <- function(run_note,
 
 # Finally, it appends the data of each sim and write a .csv for each control and intervention.
 
-sim_two_arm_trial <- function(trial_slug, n_power,
+sim_two_arm_trial <- function(trial_id, n_power,
                               ## Verbose sim parameters
                               verbose_protocol,
                               ## Key intervention parameters
@@ -131,7 +131,7 @@ sim_two_arm_trial <- function(trial_slug, n_power,
     ) %>%
       dplyr::mutate(sim = i)
   }) %>%
-    write.csv(paste0("outputs/cohort_data/", trial_slug, "_control.csv"), row.names = FALSE)
+    write.csv(paste0("outputs/cohort_data/", trial_id, "_control.csv"), row.names = FALSE)
   
   # Intervention
   
@@ -145,7 +145,7 @@ sim_two_arm_trial <- function(trial_slug, n_power,
     ) %>%
       dplyr::mutate(sim = i)
   }) %>%
-    write.csv(paste0("outputs/cohort_data/", trial_slug, "_intervention.csv"), row.names = FALSE)
+    write.csv(paste0("outputs/cohort_data/", trial_id, "_intervention.csv"), row.names = FALSE)
   
   
   unlink("verbose_dump/*")
