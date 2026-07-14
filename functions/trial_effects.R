@@ -62,7 +62,8 @@ estimate_relative_effect <- function(df,
     # Pivot to compare each
     tidyr::pivot_wider(names_from = arm, values_from = value) %>%
     mutate(
-      effect = 1 - .data[[intervention]] / .data[[control]]
+      effect = 1 - .data[[intervention]] / .data[[control]],
+      effect = if_else(is.finite(effect), as.numeric(effect), NA_real_)
     ) %>%
     mutate(effect = as.numeric(effect))
   
