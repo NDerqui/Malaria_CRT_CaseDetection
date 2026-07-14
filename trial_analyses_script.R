@@ -46,6 +46,7 @@ trial_slug <- metadata$trial_slug
 sim_length <- metadata$simulation$sim_length
 trial_start <- metadata$trial$trial_start
 trial_second_intervention <- metadata$trial$trial_second_intervention
+key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
 human_population <- metadata$simulation$human_population
 trial_size <- metadata$cohort$trial_size
@@ -73,7 +74,7 @@ acd_protocol <- list(
 # Run function for all estimates just from the trial name and protocols defined above
 
 trial_results <- analyse_two_arm_trial(
-  trial_slug = trial_slug,
+  trial_id = trial_id,
   trial_start = trial_start,
   trial_second_intervention = trial_second_intervention,
   sim_length = sim_length,
@@ -101,7 +102,7 @@ save_two_arm_trial_plots(
   trial_slug = trial_slug,
   key_intervention_time = key_intervention_time,
   sim_length = sim_length,
-  trial_title = trial_title
+  trial_title = trial_name
 )
 
 
@@ -132,7 +133,7 @@ for (visit_window in 1:length(visits)) {
     )
     
     trial_results <- analyse_two_arm_trial(
-      trial_slug = trial_slug,
+      trial_id = trial_id,
       trial_start = trial_start,
       trial_second_intervention = trial_second_intervention,
       sim_length = sim_length,
@@ -146,7 +147,7 @@ for (visit_window in 1:length(visits)) {
       mutate(protocol = paste0(visits[visit_window], " weeks - ", visits_period[visit_period_window], " days window"))
     gc()
   
-    results_protocol_test <- rbind(result_protocol_test, trial_results)
+    results_protocol_test <- rbind(results_protocol_test, trial_results)
       
   }
 }
