@@ -155,9 +155,9 @@ write.csv(results_protocol_test,
           paste0("outputs/estimates/protocol_tests/", trial_slug, "_acd_protocol.csv"),
           row.names = FALSE)
 
-png(filename = paste0("outputs/estimates/protocol_tests/", trial_slug, "_acd_protocol.png"),
+png(filename = paste0("outputs/plots/protocol_tests/", trial_slug, "_acd_protocol.png"),
     width = 12, height = 5, units = "in", res = 1200)
-ggplot(data = filter(results_protocol_test, is.numeric(effect)),
+ggplot(data = results_protocol_test,
        aes(x = timestep, y = mean, color = protocol)) +
   geom_errorbar(aes(ymin = lower_95quant, ymax = upper_95quant), width = 0.2) +
   geom_jitter(size = 3) +
