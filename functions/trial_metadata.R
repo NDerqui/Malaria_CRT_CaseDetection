@@ -29,6 +29,21 @@ create_trial_metadata <- function(trial_name, simulation, trial,
   )
 }
 
+flatten_metadata <- function(x, prefix = NULL) {
+  purrr::imap_dfr(x, function(value, name) {
+    parameter <- paste(c(prefix, name), collapse = ".")
+    
+    if (is.list(value)) {
+      flatten_metadata(value, parameter)
+    } else {
+      tibble::tibble(
+        parameter = parameter,
+        value = paste(as.character(value), collapse = "; ")
+      )
+    }
+  })
+}
+
 save_trial_metadata <- function(metadata) {
   
   # Ensure folder system is there
@@ -67,12 +82,18 @@ save_trial_metadata <- function(metadata) {
     row.names = FALSE
   )
   
-  # Save the metada as Rds
+  # Save the metada as Rds (to lead for analysis) and csv (for consultation)
   
   saveRDS(
     metadata,
     file.path("outputs/metadata", paste0(metadata$trial_id, ".rds"))
   )
+  
+  flatten_metadata(metadata) %>%
+    write.csv(
+      paste0("outputs/metadata/", metadata$trial_id, ".csv"),
+      row.names = FALSE
+    )
 }
 
 load_trial_metadata <- function(trial_name, trial_id = NULL) {
