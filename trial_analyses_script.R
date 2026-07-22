@@ -49,7 +49,7 @@ trial_second_intervention <- metadata$trial$trial_second_intervention
 key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
 human_population <- metadata$simulation$human_population
-trial_size <- metadata$cohort$trial_size
+trial_size <- metadata$analysis_cohort$trial_size
 
 # Ensure we have output dirs
 
