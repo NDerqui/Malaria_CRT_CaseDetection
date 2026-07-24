@@ -17,24 +17,42 @@ run_verbose_sim <- function(simparams, sim_length,
                             run_note = "", snapshot_time,
                             # IMP: if we modified any of the default following pars,
                             # we need to set them here too, so that the verbose run is consistent with the baseline run.
-                            baseline_bednets_timesteps = seq(0, sim_length, 3), # By default, bednet rounds every 3 years
+                            baseline_bednets_timesteps = seq(1, sim_length, 3), # By default, bednet rounds every 3 years
                             baseline_bed_coverage = 0.5,  # Each round is distributed to 50% of the population.
                             baseline_bed_retention = 5,   # Nets are kept on average 5 years
                             baseline_bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
                             baseline_bed_rn = 0.568,      # Repelling probabilities for each mosquito species 
                             baseline_bed_rnm = 0.24,      # Minimum repelling probabilities for each mosquito species
                             baseline_bed_gamman = 2.64,   # Bed net half-lives
+                            # For the vaccine too!
+                            baseline_vax_timesteps = 1,   # Round of vaccination is at 1st year into the simulation.
+                            baseline_vax_profile = rtss_profile, # Implementation of the RTSS vaccine.
+                            baseline_vax_coverage = 1,    # The vaccine is given to 100% of the population between the specified ages.
+                            baseline_vax_min_wait = 0,    # The minimum acceptable time since the last vaccination is 0 because in our case we are only implementing one round of vaccination.
+                            baseline_vax_min_age_month = 5,   # The minimum age for the target population to be vaccinated. 
+                            baseline_vax_max_age_year = 5,    # The maximum age for the target population to be vaccinated.
+                            baseline_vax_booster_spacing_month = 12, # The booster is given at 12 months after the primary series. 
+                            baseline_vax_booster_coverage = 0.95,    # Coverage of the booster dose is 95%.
+                            baseline_vax_booster_profile = rtss_booster_profile, # We will model implementation of the RTSS booster.
                             ## Key intervention
                             # Here, we only have one intervention (vaccine or bednet)
                             key_intervention, key_intervention_time = NA,
                             # IMP: we need to have an options to modify the following pars,
                             # but by default are kept the same as the set_baseline_par
+                            # Bednets:
                             intervention_bed_coverage = baseline_bed_coverage,  
                             intervention_bed_retention = baseline_bed_retention,   
                             intervention_bed_dn0 = baseline_bed_dn0,     
                             intervention_bed_rn = baseline_bed_rn,      
                             intervention_bed_rnm = baseline_bed_rnm,      
-                            intervention_bed_gamman = baseline_bed_gamman    
+                            intervention_bed_gamman = baseline_bed_gamman,
+                            # Vaccines:
+                            intervention_vax_coverage = baseline_vax_coverage,
+                            intervention_vax_min_wait = baseline_vax_min_wait,
+                            intervention_vax_min_age_month = baseline_vax_min_age_month,
+                            intervention_vax_max_age_year = baseline_vax_max_age_year,
+                            intervention_vax_booster_spacing_month = baseline_vax_booster_spacing_month,
+                            intervention_vax_booster_coverage = baseline_vax_booster_coverage
                             ) {
   
   require(malariasimulation)
@@ -89,7 +107,43 @@ run_verbose_sim <- function(simparams, sim_length,
     simparams[["bednet_rnm"]][index_key_intervention] <- intervention_bed_rnm
     simparams[["bednet_gamman"]][index_key_intervention] <- intervention_bed_gamman * year
 
-    }
+  }
+  
+  # Re-set vaccine pars if this is the key intervention of interest
+  
+  if (key_vaccine) {
+    
+    # Add our key intervention timepoint
+    # (if already there, no adding; if not, add)
+    vaccine_timesteps <- sort(unique(c(baseline_vax_timesteps, key_intervention_time)))
+    
+    # Override the vaccine pars with the extra (or not) timepoint
+    # The pars here should match those used in the baseline function
+    simparams <- set_mass_pev(
+      simparams,
+      profile = baseline_vax_profile,
+      timesteps = vaccine_timesteps * year,
+      coverages = baseline_vax_coverage,
+      min_wait = baseline_vax_min_wait,
+      min_ages = baseline_vax_min_age_month * month,
+      max_ages = baseline_vax_max_age_year * year,
+      booster_spacing = baseline_vax_booster_spacing_month * month,
+      booster_coverage = matrix(baseline_vax_booster_coverage),
+      booster_profile = list(baseline_vax_booster_profile)
+    )
+    
+    # Get the index for that intervention timepoint(s)
+    index_key_intervention <- which(vaccine_timesteps %in% key_intervention_time)
+    
+    # And subscribe that parameter in that timepoint(s)
+    simparams[["mass_pev_coverages"]] <- intervention_vax_coverage
+    simparams[["mass_pev_min_wait"]][index_key_intervention] <- intervention_vax_min_wait
+    simparams[["mass_pev_min_ages"]][index_key_intervention] <- intervention_vax_min_age_month * month
+    simparams[["mass_pev_max_ages"]][index_key_intervention] <- intervention_vax_max_age_year * year
+    simparams[["mass_pev_booster_spacing"]][index_key_intervention] <- intervention_vax_booster_spacing_month * month
+    simparams[["mass_pev_booster_coverage"]][index_key_intervention] <- matrix(intervention_vax_booster_coverage)
+    
+  }
   
   
   ## Verbose sims options

@@ -46,14 +46,15 @@ human_population <- 10000
 boolean_seasonality <- TRUE
 boolean_treatment <- TRUE
 boolean_bednets <- TRUE
+boolean_vaccine <- TRUE
 
 # Set length of sim and when do our interventions start.
 # We can do two interventions, timing of second calculated with respect to first.
 
 sim_length <- 6
 
-trial_start <- 2
-trial_second_intervention <- 2
+trial_start <- 1
+trial_second_intervention <- 3
 
 key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
@@ -91,7 +92,8 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
                                          human_population = human_population,
                                          seasonality = boolean_seasonality,
                                          treatment = boolean_treatment,
-                                         bednets = boolean_bednets)
+                                         bednets = boolean_bednets,
+                                         vaccine = boolean_vaccine)
 
 ## Create protocols for our simulation and intervention
 
