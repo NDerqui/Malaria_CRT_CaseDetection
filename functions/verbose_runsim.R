@@ -114,3 +114,107 @@ run_verbose_sim <- function(simparams, sim_length,
   
   return(output)
 }
+
+run_verbose_sim_pev_vaccines <- function(
+    simparams,
+    sim_length,
+    ## Note for verbose dump file,
+    # and timing for the age snapshot (time at which we get age for all alive)
+    run_note = "",
+    snapshot_time = 1,
+    # Vaccine interventions
+    vaccine_bool,
+    profile = c(),
+    # IMP: we need to have an options to modify the following pars,
+    # but by default are kept the same as the set_baseline_par
+    vaccine_epi = FALSE, # Vaccine epi strategy boolean 
+    vaccine_mass = FALSE, # Mass vaccination strategy boolean
+    epi_timesteps = NA,
+    epi_coverages = NA,
+    epi_min_wait = NA, 
+    epi_age = NA,
+    epi_booster_spacing = NA,
+    epi_boost_coverage = NA,
+    mass_timesteps = NA,
+    mass_coverage = NA,
+    mass_min_age = NA,
+    mass_max_age = NA,
+    mass_min_wait = NA,
+    mass_booster_spacing = NA,
+    mass_booster_coverage = NA
+) {
+  
+  ## Verbose sims options
+  
+  # Keep as basic:
+  # i.e. retrieve all states, process and ITNs pars for people <80 years.
+  
+  simparams$progress_bar <- TRUE
+  
+  simparams$infection_verbose <- TRUE
+  simparams$biting_verbose <- FALSE
+  simparams$mortality_verbose <- TRUE
+  simparams$progression_verbose <- TRUE
+  simparams$spraying_verbose <- FALSE
+  simparams$nets_verbose <- FALSE
+  simparams$pev_verbose <- vaccine_bool
+  simparams$states_verbose <- FALSE
+  simparams$snapshot_verbose <- TRUE
+  simparams$snapshot_times <- snapshot_time
+  simparams$start_time <- 0
+  simparams$lower_age_bound <- 0
+  simparams$upper_age_bound <- 1000*year
+  simparams$state_recording_freq <- 25
+  
+  if (vaccine_bool){
+    if (vaccine_epi){
+      simparams <- set_pev_epi(
+        simparams,
+        profile = profile,
+        timesteps = epi_timesteps,
+        coverages = epi_coverages,
+        min_wait = epi_min_wait, 
+        age = epi_age,
+        booster_spacing = epi_booster_spacing,
+        booster_coverage = epi_boost_coverage,
+        booster_profile = list(profile)
+      )
+    }
+    if (vaccine_mass){
+      simparams <- set_mass_pev(
+        parameters = simparams,
+        profile = profile,
+        timesteps = mass_timesteps,
+        coverages = mass_coverage,
+        min_ages = mass_min_age,
+        max_ages = mass_max_age,
+        min_wait = mass_min_wait,
+        booster_spacing = mass_booster_spacing,
+        booster_coverage = mass_booster_coverage,
+        booster_profile = list(profile) 
+      ) 
+    }
+    if (!vaccine_epi && !vaccine_mass){
+      print("Warning, you have selected to vaccinate but have not given a strategy\n
+            and thus there is no vaccine applied")
+    }
+  }
+  
+  folder <- "outputs_verbose_sims"
+  
+  dir.create(paste0(folder, "/"), showWarnings = FALSE)
+  
+  # Set the verbose file name 
+  
+  simparams$file_name <- paste0(folder, "/verbose_dumping_", run_note, ".csv")
+  simparams$snapshot_file_name <- paste0(folder, "/verbose_dumping_snapshot_", run_note, ".csv")
+  
+  ## Run simulation
+  
+  output <- malariasimulation:::run_verbose_simulation(
+    timesteps = sim_length * year,
+    parameters = simparams
+    )
+  
+  return(output)
+}
