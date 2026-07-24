@@ -60,11 +60,11 @@ save_trial_metadata <- function(metadata) {
     data.frame()
   }
   
-  # Check where there is a trial with the same name
+  # Check where there is a trial with the same id
   
   if (nrow(registry) > 0 &&
-      metadata$trial_name %in% registry$trial_name) {
-    stop("trial_name already exists: ", metadata$trial_name)
+      metadata$trial_id %in% registry$trial_id) {
+    stop("trial_id already exists: ", metadata$trial_id)
   }
   
   # Save a row for each trial simulation to keep a registry
