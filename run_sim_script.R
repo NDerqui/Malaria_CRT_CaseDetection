@@ -161,7 +161,7 @@ metadata <- create_trial_metadata(
   intervention = c(
     list(key_intervention = key_intervention),
     intervention_protocol
-  )
+  ),
   
   analysis_cohort = analysis_cohort_protocol,
   n_power = n_power

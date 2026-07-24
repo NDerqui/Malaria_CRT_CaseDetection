@@ -141,7 +141,7 @@ run_verbose_sim <- function(simparams, sim_length,
     index_key_intervention <- which(vaccine_timesteps %in% key_intervention_time)
     
     # And subscribe that parameter in that timepoint(s)
-    simparams[["mass_pev_coverages"]] <- intervention_vax_coverage
+    simparams[["mass_pev_coverages"]][index_key_intervention] <- intervention_vax_coverage
     simparams[["mass_pev_min_wait"]][index_key_intervention] <- intervention_vax_min_wait
     simparams[["mass_pev_min_ages"]][index_key_intervention] <- intervention_vax_min_age_month * month
     simparams[["mass_pev_max_ages"]][index_key_intervention] <- intervention_vax_max_age_year * year
