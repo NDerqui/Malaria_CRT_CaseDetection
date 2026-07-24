@@ -171,6 +171,12 @@ make_output_dirs()
 save_trial_metadata(metadata)
 
 
+
+# CHECKS ------------------------------------------------------------------
+
+# Not necessary for the workflow, but useful to check that the sim ran as expected.
+
+
 #### vis ####
 
 source("functions/verbose_visualisation.R")
@@ -180,6 +186,7 @@ source("functions/verbose_visualisation.R")
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_control.png"),
     width = 8, height = 5, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_id, "_control.csv")) %>%
+  filter(sim == sample(x = unique(sim), size = 1)) %>%
   plot_verbose_itn(note = paste0("Control: ", trial_name), sim_length = sim_length,
                    human_population = human_population, trial_size = trial_size,
                    bednetstimesteps = seq(0, sim_length, 3)*year)
@@ -190,6 +197,7 @@ dev.off()
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_intervention.png"),
     width = 8, height = 5, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_id, "_intervention.csv")) %>%
+  filter(sim == sample(x = unique(sim), size = 1)) %>%
 plot_verbose_itn(note = paste0("Intervention: ", trial_name), sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
