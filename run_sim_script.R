@@ -74,7 +74,7 @@ n_power <- 10
 trial_name <- "High transmission test for workflow"
 
 
-#### sim pars and metadata ####
+#### sim pars ####
 
 ## Functions to set up parameters
 
@@ -110,6 +110,9 @@ analysis_cohort_protocol <- list(
   alive_by = trial_start*year,
   trial_size = trial_size,
   age_min = 0, age_max = 10)
+
+
+#### metadata ####
 
 ## Functions to save the protocols and all trial metadata
 
@@ -149,9 +152,6 @@ metadata <- create_trial_metadata(
 trial_id <- metadata$trial_id
 trial_slug <- make_trial_slug(trial_name = trial_name)
 
-make_output_dirs()
-save_trial_metadata(metadata)
-
 
 #### run sim ####
 
@@ -164,6 +164,11 @@ sim_two_arm_trial(trial_id = trial_id,
                   verbose_protocol = verbose_protocol,
                   intervention_protocol = intervention_protocol,
                   analysis_cohort_protocol = analysis_cohort_protocol)
+
+# Only save the metadata after a successful sim runs
+
+make_output_dirs()
+save_trial_metadata(metadata)
 
 
 #### vis ####
