@@ -71,7 +71,7 @@ run_and_clean_verbose <- function(run_note,
                    snapshot_time = verbose_protocol$snapshot_time)
   
   analyses_cohort <- do.call(
-    get_enrol_sample,
+    get_enrol_samples,
     c(list(df = analyses_cohort), analysis_cohort_protocol)
   )
   

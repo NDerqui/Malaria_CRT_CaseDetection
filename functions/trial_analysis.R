@@ -79,7 +79,9 @@ analyse_two_arm_trial <- function(trial_id,
   # Now that we have calculated effect for each simulation using each sim's prev and inc,
   # we can now get summaries (mean and 95%CI) across simulations for each measure and timestep
   
-  possible_grouping_vars <- c("run", "type_measure", "sim", "timestep", "period", "period_label")
+  possible_grouping_vars <- c(
+    "run", "analysis_population", "type_measure",
+    "sim", "timestep", "period", "period_label")
   measures <- c("prevalence_infection", "prevalence_case",
                 "incidence_ppd_infection", "incidence_ppd_case",
                 "incidence_ppy_infection", "incidence_ppy_case")
@@ -153,7 +155,7 @@ analyse_two_arm_trial <- function(trial_id,
     mutate(measure = "Case Hazard Ratio",
            effect = 1 - hazard_ratio) %>%
     # Create mean and 95%CI across simulations
-    group_by(across(c("type_measure", "measure", "timestep"))) %>%
+    group_by(across(c("analysis_population", "type_measure", "measure", "timestep"))) %>%
     mutate(mean = mean(effect, na.rm = TRUE),
            lower_95quant = quantile(effect, probs = 0.025, na.rm = TRUE),
            upper_95quant = quantile(effect, probs = 0.975, na.rm = TRUE),

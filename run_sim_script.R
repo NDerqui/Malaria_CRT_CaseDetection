@@ -97,7 +97,9 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
 
 ## Create protocols for our simulation and intervention
 
-# Put the options for the verbose run, the intervention and the analysis cohort in lists to pass to the wrapper function.
+# Put the options for the verbose run,
+# the intervention and the analysis cohort in lists to pass to the wrapper function.
+# This includes the population(s) age boundary(ies) for the follow-up cohort.
 
 verbose_protocol <- list(
   simparams = baseline_parameters,
@@ -108,10 +110,18 @@ intervention_protocol <- list(
   key_intervention_time = key_intervention_time,
   intervention_bed_coverage = 0.95)
 
+analysis_populations <- tibble::tribble(
+  ~analysis_population, ~age_min, ~age_max,
+  "age_0_5",                    0,        5,
+  "age_5_15",                   5,       15,
+  "all_ages",                   0,      100
+)
+
 analysis_cohort_protocol <- list(
-  alive_by = trial_start*year,
+  alive_by = trial_start * year,
   trial_size = trial_size,
-  age_min = 0, age_max = 10)
+  analysis_populations = analysis_populations
+)
 
 
 #### metadata ####
@@ -164,6 +174,7 @@ source("functions/verbose_tidy_outputs.R")
 sim_two_arm_trial(trial_id = trial_id,
                   n_power = n_power,
                   verbose_protocol = verbose_protocol,
+                  key_intervention = "bednet",
                   intervention_protocol = intervention_protocol,
                   analysis_cohort_protocol = analysis_cohort_protocol)
 

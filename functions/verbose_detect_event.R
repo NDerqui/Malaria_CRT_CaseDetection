@@ -20,9 +20,9 @@ detect_ever_malaria <- function(df) {
   
   df <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
+    arrange(analysis_population, individual_index, timestep) %>%
     # Everything by indv_index as we want to see overall status
-    group_by(individual_index) %>%
+    group_by(analysis_population, individual_index) %>%
     mutate(ever_infected = any(state %in% c("U", "A", "D", "Tr"))) %>%
     mutate(ever_case = any(state %in% c("D", "Tr"))) %>%
     ungroup()
@@ -54,13 +54,13 @@ detect_infection <- function(df) {
   
   df <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
+    arrange(analysis_population, individual_index, timestep) %>%
     # First get the transition pairing process to state,
     # because some processes will be new infection or not depending on previous state.
     mutate(transition = paste0(process, " - ", state)) %>%
     # Everything by indv_index as we do not want timstep lag from other indv_index
     # but no need of timestep (as it will go row_wise)
-    group_by(individual_index) %>%
+    group_by(analysis_population, individual_index) %>%
     # Detect appearances of a new infection as:
     # New D or T (by model definition, new Ds or Ts are new infections), or as
     # an accepted transition to A (see above)
@@ -74,10 +74,10 @@ detect_infection <- function(df) {
   
   df <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
+    arrange(analysis_population, individual_index, timestep) %>%
     # Everything by indv_index as we do not want timstep lag from other indv_index
     # but no need of timestep (as it will go row_wise)
-    group_by(individual_index) %>%
+    group_by(analysis_population, individual_index) %>%
     # Detect new appearances of D/T using lag function (TRUE / FALSE)
     mutate(new_D = (state == "D" & lag(state, default = first(state)) != "D")) %>%
     mutate(new_T = (state == "Tr" & lag(state, default = first(state)) != "Tr")) %>%
@@ -90,7 +90,7 @@ detect_infection <- function(df) {
 
   df <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(individual_index, timestep) %>%
+    arrange(analysis_population, individual_index, timestep) %>%
     # Flag all infection states
     mutate(infected_at_time = state %in% c("U", "A", "D", "Tr")) %>%
     mutate(case_at_time = state %in% c("D", "Tr")) 

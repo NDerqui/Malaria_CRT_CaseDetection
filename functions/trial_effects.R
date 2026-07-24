@@ -30,7 +30,7 @@ tidy_outcomes_for_effect <- function(df,
   df <- df %>%
     select(-any_of(c("n", "person_days_at_risk", "infections", "cases",
                      "new_infections", "new_cases", "period", "period_label"))) %>%
-    pivot_longer(-c(timestep, sim, type_measure, run),
+    pivot_longer(-c(analysis_population, timestep, sim, type_measure, run),
                  names_to = "measure", values_to = "value") %>%
     mutate(measure = factor(measure, levels = measures, labels = measures_labels))
   
@@ -45,7 +45,8 @@ tidy_outcomes_for_effect <- function(df,
 estimate_relative_effect <- function(df,
                                 value_col = "value", arm_col = "run",
                                 control = "Control", intervention = "Intervention",
-                                outcome_cols = c("type_measure", "measure", "timestep", "sim")) {
+                                outcome_cols = c("analysis_population",
+                                                 "type_measure", "measure", "timestep", "sim")) {
 
   require(dplyr)
   require(tidyr)
@@ -134,7 +135,7 @@ estimate_hazard_ratio_by_sim <- function(df,
   require(dplyr)
   
   result <- df %>%
-    group_by(sim) %>%
+    group_by(analysis_population, sim) %>%
     group_modify(~ estimate_hazard_ratio(
       df = .x, time_col = time_col, event_col = event_col,
       arm_col = arm_col, control = control, covariates = covariates

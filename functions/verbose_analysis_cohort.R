@@ -73,8 +73,6 @@ get_age_cohort <- function(df, age_snapshot, snapshot_time) {
   age_cohort <- df %>%
     filter(individual_index %in% unique(c(those_born, those_snapshot)))
   
-  print(paste0("We can have age for ", round(nrow(age_cohort)*100/nrow(df), 2), "% of sim pop."))
-  
   # Second, add the age of our snapshot to the main df
   
   age_snapshot <- age_snapshot %>%
@@ -164,6 +162,15 @@ get_enrol_sample <- function(df, alive_by = min(df$timestep), trial_size,
     ungroup() %>%
     filter(in_age_group) %>% select(-in_age_group)
   
+  # Check if we have enough individuals to sample from, otherwise return an error
+  
+  eligible <- unique(df$individual_index)
+  
+  if (length(eligible) < trial_size) {
+    stop("Only ", length(eligible),
+         " eligible individuals; trial_size is ", trial_size)
+  }
+  
   # Now randomly select x number of indv as our sample
   
   random_sample <- sample(unique(df$individual_index),
@@ -174,4 +181,25 @@ get_enrol_sample <- function(df, alive_by = min(df$timestep), trial_size,
     filter(individual_index %in% random_sample)
   
   return(df)
+}
+
+# A wrapper to the above across several populations
+
+get_enrol_samples <- function(df, alive_by, trial_size,
+                              analysis_populations) {
+  
+  purrr::pmap_dfr(
+    analysis_populations,
+    function(analysis_population, age_min, age_max) {
+      
+      get_enrol_sample(
+        df = df,
+        alive_by = alive_by,
+        trial_size = trial_size,
+        age_min = age_min,
+        age_max = age_max
+      ) %>%
+        mutate(analysis_population = analysis_population)
+    }
+  )
 }
