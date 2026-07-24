@@ -106,7 +106,7 @@ verbose_protocol <- list(
 
 intervention_protocol <- list(
   key_intervention_time = key_intervention_time,
-  bed_coverage = 0.95)
+  intervention_bed_coverage = 0.95)
 
 analysis_cohort_protocol <- list(
   alive_by = trial_start*year,

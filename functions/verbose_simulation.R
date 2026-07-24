@@ -71,7 +71,12 @@ run_verbose_sim <- function(simparams, sim_length,
       key_bednet <- FALSE
       key_vaccine <- TRUE
     } else {
-      stop("Key intervention must be either 'bednet' or 'vaccine'.")
+      if (key_intervention == "none") {
+        key_bednet <- FALSE
+        key_vaccine <- FALSE
+      } else {
+        stop("Par 'key_intervention' must be 'bednet', 'vaccine' or 'none'.")
+      }
     }
   }
   

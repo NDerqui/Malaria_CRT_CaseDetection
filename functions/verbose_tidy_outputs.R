@@ -13,7 +13,7 @@ run_and_clean_verbose <- function(run_note,
                                   ## Shared verbose sim parameters
                                   verbose_protocol,
                                   ## Key intervention parameters
-                                  key_bednet, intervention_protocol = NULL,
+                                  key_intervention, intervention_protocol = NULL,
                                   ## Parameters to follow only analysis cohort
                                   analysis_cohort_protocol) {
   
@@ -39,7 +39,7 @@ run_and_clean_verbose <- function(run_note,
   # Run and extract state
   
   sim_args <- c(verbose_protocol,
-                list(run_note = run_note, key_bednet = key_bednet))
+                list(run_note = run_note, key_intervention = key_intervention))
   
   if (!is.null(intervention_protocol)) {
     sim_args <- c(sim_args, intervention_protocol)
@@ -103,7 +103,7 @@ sim_two_arm_trial <- function(trial_id, n_power,
                               ## Verbose sim parameters
                               verbose_protocol,
                               ## Key intervention parameters
-                              intervention_protocol,
+                              key_intervention, intervention_protocol,
                               ## Parameters to follow only analysis cohort
                               analysis_cohort_protocol) {
   
@@ -126,7 +126,7 @@ sim_two_arm_trial <- function(trial_id, n_power,
     run_and_clean_verbose(
       verbose_protocol = verbose_protocol,
       run_note = "control",
-      key_bednet = FALSE,
+      key_intervention = "none",
       analysis_cohort_protocol = analysis_cohort_protocol
     ) %>%
       dplyr::mutate(sim = i)
@@ -139,7 +139,7 @@ sim_two_arm_trial <- function(trial_id, n_power,
     run_and_clean_verbose(
       verbose_protocol = verbose_protocol,
       run_note = "intervention",
-      key_bednet = TRUE,
+      key_intervention = key_intervention,
       intervention_protocol = intervention_protocol,
       analysis_cohort_protocol = analysis_cohort_protocol
     ) %>%
