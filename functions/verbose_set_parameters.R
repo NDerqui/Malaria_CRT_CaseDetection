@@ -26,13 +26,13 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               ## Bednet pars (coverage, etc. default)
                               # By default in these sims, parameters constant over time
                               bednets,
-                              bednets_timesteps = seq(0, sim_length, 3), # By default, bednet rounds every 3 years
-                              bed_coverage = 0.5,  # Each round is distributed to 50% of the population.
-                              bed_retention = 5,   # Nets are kept on average 5 years
-                              bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
-                              bed_rn = 0.568,      # Repelling probabilities for each mosquito species 
-                              bed_rnm = 0.24,      # Minimum repelling probabilities for each mosquito species
-                              bed_gamman = 2.64    # Bed net half-lives
+                              baseline_bednets_timesteps = seq(0, sim_length, 3), # By default, bednet rounds every 3 years
+                              baseline_bed_coverage = 0.5,  # Each round is distributed to 50% of the population.
+                              baseline_bed_retention = 5,   # Nets are kept on average 5 years
+                              baseline_bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
+                              baseline_bed_rn = 0.568,      # Repelling probabilities for each mosquito species 
+                              baseline_bed_rnm = 0.24,      # Minimum repelling probabilities for each mosquito species
+                              baseline_bed_gamman = 2.64    # Bed net half-lives
                               ) {
   
   require(malariasimulation)
@@ -82,13 +82,13 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
   
   simparams <- set_bednets(
     simparams,
-    timesteps = bednets_timesteps * year,
-    coverages = rep(bed_coverage, times = length(bednets_timesteps)),
-    retention = bed_retention * year, 
-    dn0 = matrix(rep(bed_dn0, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of death probabilities
-    rn = matrix(rep(bed_rn, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of repelling probabilities 
-    rnm = matrix(rep(bed_rnm, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of minimum repelling probabilities
-    gamman = rep(bed_gamman * year, times = length(bednets_timesteps)) # Vector of bed net half-lives for each distribution timestep
+    timesteps = baseline_bednets_timesteps * year,
+    coverages = rep(baseline_bed_coverage, times = length(bednets_timesteps)),
+    retention = baseline_bed_retention * year, 
+    dn0 = matrix(rep(baseline_bed_dn0, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of death probabilities
+    rn = matrix(rep(baseline_bed_rn, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of repelling probabilities 
+    rnm = matrix(rep(baseline_bed_rnm, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of minimum repelling probabilities
+    gamman = rep(baseline_bed_gamman * year, times = length(bednets_timesteps)) # Vector of bed net half-lives for each distribution timestep
   )
   
   }

@@ -15,17 +15,26 @@ run_verbose_sim <- function(simparams, sim_length,
                             ## Note for verbose dump file,
                             # and timing for the age snapshot (time at which we get age for all alive)
                             run_note = "", snapshot_time,
+                            # IMP: if we modified any of the default following pars,
+                            # we need to set them here too, so that the verbose run is consistent with the baseline run.
+                            baseline_bednets_timesteps = seq(0, sim_length, 3), # By default, bednet rounds every 3 years
+                            baseline_bed_coverage = 0.5,  # Each round is distributed to 50% of the population.
+                            baseline_bed_retention = 5,   # Nets are kept on average 5 years
+                            baseline_bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
+                            baseline_bed_rn = 0.568,      # Repelling probabilities for each mosquito species 
+                            baseline_bed_rnm = 0.24,      # Minimum repelling probabilities for each mosquito species
+                            baseline_bed_gamman = 2.64,   # Bed net half-lives
                             ## Key intervention
-                            # Here, only set so that key intervention is bednet
-                            key_bednet, key_intervention_time = NA,
+                            # Here, we only have one intervention (vaccine or bednet)
+                            key_intervention, key_intervention_time = NA,
                             # IMP: we need to have an options to modify the following pars,
                             # but by default are kept the same as the set_baseline_par
-                            bed_coverage = 0.5,  # Each round is distributed to 50% of the population.
-                            bed_retention = 5,   # Nets are kept on average 5 years
-                            bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
-                            bed_rn = 0.568,      # Repelling probabilities for each mosquito species 
-                            bed_rnm = 0.24,      # Minimum repelling probabilities for each mosquito species
-                            bed_gamman = 2.64    # Bed net half-lives
+                            intervention_bed_coverage = baseline_bed_coverage,  
+                            intervention_bed_retention = baseline_bed_retention,   
+                            intervention_bed_dn0 = baseline_bed_dn0,     
+                            intervention_bed_rn = baseline_bed_rn,      
+                            intervention_bed_rnm = baseline_bed_rnm,      
+                            intervention_bed_gamman = baseline_bed_gamman    
                             ) {
   
   require(malariasimulation)
@@ -34,42 +43,51 @@ run_verbose_sim <- function(simparams, sim_length,
   year <- 365
   
  
-  ## Key intervention 
+  ## Key intervention
+  
+  if (key_intervention == "bednet") {
+    key_bednet <- TRUE
+    key_vaccine <- FALSE
+  } else {
+    if (key_intervention == "vaccine") {
+      key_bednet <- FALSE
+      key_vaccine <- TRUE
+    } else {
+      stop("Key intervention must be either 'bednet' or 'vaccine'.")
+    }
+  }
   
   # Re-set bednets pars if this is the key intervention of interest
   
   if (key_bednet) {
   
-    # These are our bednets distribution rounds as per baseline par
-    bednets_timesteps <- seq(0, sim_length, 3)
-    
     # Add our key intervention timepoint
-    # (if already there, no adding, if not, add)
-    bednets_timesteps <- sort(unique(c(bednets_timesteps, key_intervention_time)))
+    # (if already there, no adding; if not, add)
+    bednets_timesteps <- sort(unique(c(baseline_bednets_timesteps, key_intervention_time)))
     
     # Override the bednet pars with the extra (or not) timepoint
     # The pars here should match those used in the baseline function
     simparams <- set_bednets(
       simparams,
       timesteps = bednets_timesteps * year,
-      coverages = rep(0.5, times = length(bednets_timesteps)),
-      retention = 5 * year, 
-      dn0 = matrix(rep(0.352, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of death probabilities
-      rn = matrix(rep(0.568, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of repelling probabilities 
-      rnm = matrix(rep(0.24, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of minimum repelling probabilities
-      gamman = rep(2.64 * year, times = length(bednets_timesteps)) # Vector of bed net half-lives for each distribution timestep
+      coverages = rep(baseline_bed_coverage, times = length(bednets_timesteps)),
+      retention = baseline_bed_retention * year, 
+      dn0 = matrix(rep(baseline_bed_dn0, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of death probabilities
+      rn = matrix(rep(baseline_bed_rn, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of repelling probabilities 
+      rnm = matrix(rep(baseline_bed_rnm, times = length(bednets_timesteps)), nrow = length(bednets_timesteps), ncol = 1), # Matrix of minimum repelling probabilities
+      gamman = rep(baseline_bed_gamman * year, times = length(bednets_timesteps)) # Vector of bed net half-lives for each distribution timestep
     )
     
     # Get the index for that intervention timepoint(s)
     index_key_intervention <- which(bednets_timesteps %in% key_intervention_time)
     
     # And subscribe that parameter in that timepoint(s)
-    simparams[["bednet_coverages"]][index_key_intervention] <- bed_coverage
-    simparams[["bednet_retention"]] <- bed_retention * year
-    simparams[["bednet_dn0"]][index_key_intervention] <- bed_dn0
-    simparams[["bednet_rn"]][index_key_intervention] <- bed_rn
-    simparams[["bednet_rnm"]][index_key_intervention] <- bed_rnm
-    simparams[["bednet_gamman"]][index_key_intervention] <- bed_gamman * year
+    simparams[["bednet_coverages"]][index_key_intervention] <- intervention_bed_coverage
+    simparams[["bednet_retention"]] <- intervention_bed_retention * year
+    simparams[["bednet_dn0"]][index_key_intervention] <- intervention_bed_dn0
+    simparams[["bednet_rn"]][index_key_intervention] <- intervention_bed_rn
+    simparams[["bednet_rnm"]][index_key_intervention] <- intervention_bed_rnm
+    simparams[["bednet_gamman"]][index_key_intervention] <- intervention_bed_gamman * year
 
     }
   
