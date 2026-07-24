@@ -48,10 +48,14 @@ boolean_treatment <- TRUE
 boolean_bednets <- TRUE
 boolean_vaccine <- TRUE
 
-# Set length of sim and when do our interventions start.
-# We can do two interventions, timing of second calculated with respect to first.
+# Set length of sim
 
 sim_length <- 6
+
+# Set the intervention and when do our interventions start.
+# We can do two interventions, timing of second calculated with respect to first.
+
+key_intervention <- "bednet"
 
 trial_start <- 1
 trial_second_intervention <- 3
@@ -144,6 +148,7 @@ metadata <- create_trial_metadata(
     seasonality = boolean_seasonality,
     treatment = boolean_treatment,
     bednets = boolean_bednets,
+    vaccine = boolean_vaccine,
     human_population = human_population,
     sim_length = sim_length,
     snapshot_time = snapshot_time
@@ -153,7 +158,10 @@ metadata <- create_trial_metadata(
     trial_start = trial_start,
     trial_second_intervention = trial_second_intervention
   ),
-  intervention = intervention_protocol,
+  intervention = c(
+    list(key_intervention = key_intervention),
+    intervention_protocol
+  )
   
   analysis_cohort = analysis_cohort_protocol,
   n_power = n_power
@@ -174,7 +182,7 @@ source("functions/verbose_tidy_outputs.R")
 sim_two_arm_trial(trial_id = trial_id,
                   n_power = n_power,
                   verbose_protocol = verbose_protocol,
-                  key_intervention = "bednet",
+                  key_intervention = key_intervention,
                   intervention_protocol = intervention_protocol,
                   analysis_cohort_protocol = analysis_cohort_protocol)
 
@@ -197,22 +205,24 @@ source("functions/verbose_visualisation.R")
 # Plot the control (no intervention)
 
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_control.png"),
-    width = 8, height = 5, units = "in", res = 1200)
+    width = 14, height = 5, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_id, "_control.csv")) %>%
   filter(sim == sample(x = unique(sim), size = 1)) %>%
   plot_verbose_itn(note = paste0("Control: ", trial_name), sim_length = sim_length,
                    human_population = human_population, trial_size = trial_size,
-                   bednetstimesteps = seq(0, sim_length, 3)*year)
+                   bednetstimesteps = seq(0, sim_length, 3)*year) +
+  facet_grid(analysis_population ~ ., scales = "free_y")
 dev.off()
 
 # Plot the intervention
 
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_intervention.png"),
-    width = 8, height = 5, units = "in", res = 1200)
+    width = 14, height = 5, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_id, "_intervention.csv")) %>%
   filter(sim == sample(x = unique(sim), size = 1)) %>%
 plot_verbose_itn(note = paste0("Intervention: ", trial_name), sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
-  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed")
+  geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
+  facet_grid(analysis_population ~ ., scales = "free_y")
 dev.off()
