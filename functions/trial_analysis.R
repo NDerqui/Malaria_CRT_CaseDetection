@@ -80,7 +80,7 @@ analyse_two_arm_trial <- function(trial_id,
   # we can now get summaries (mean and 95%CI) across simulations for each measure and timestep
   
   possible_grouping_vars <- c(
-    "run", "analysis_population", "type_measure",
+    "analysis_population", "run", "type_measure",
     "sim", "timestep", "period", "period_label")
   measures <- c("prevalence_infection", "prevalence_case",
                 "incidence_ppd_infection", "incidence_ppd_case",
@@ -163,7 +163,8 @@ analyse_two_arm_trial <- function(trial_id,
            power_benefit = mean(significant_benefit, na.rm = TRUE),
            n_sim = n_distinct(sim)) %>%
     filter(row_number() == 1) %>% ungroup() %>%
-    select(type_measure, measure, timestep, mean, lower_95quant, upper_95quant, power_any, power_benefit, n_sim)
+    select(analysis_population, type_measure, measure, timestep,
+           mean, lower_95quant, upper_95quant, power_any, power_benefit, n_sim)
   
   ## SAVE
   
