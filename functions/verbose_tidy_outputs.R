@@ -47,10 +47,19 @@ run_and_clean_verbose <- function(run_note,
   
   out <- do.call(run_verbose_sim, sim_args)
   
-  df <- read.csv(paste0("verbose_dump/", run_note, "_full_output.csv"))
+  # Option with local .csv
+  # df <- read.csv(paste0("verbose_dump/", run_note, "_full_output.csv"))
+  
+  # Option without csv dependency
+  df <- out$verbose_data
   
   df$process <- out$process_vector[df$process_index]
   df$state <- out$state_list[df$state_index]
+  
+  # Some final clean
+  df <- df %>%
+    select(-process_index, -state_index) %>%
+    arrange(individual_index, timestep)
   
   rm(out)
   
