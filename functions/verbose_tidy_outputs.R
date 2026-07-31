@@ -99,7 +99,7 @@ run_and_clean_verbose <- function(run_note,
 
 # Finally, it appends the data of each sim and write a .csv for each control and intervention.
 
-sim_two_arm_trial <- function(trial_id, n_power,
+sim_two_arm_trial <- function(trial_id, n_power, n_clusters,
                               ## Verbose sim parameters
                               verbose_protocol,
                               ## Key intervention parameters
@@ -118,35 +118,71 @@ sim_two_arm_trial <- function(trial_id, n_power,
   year <- 365
   
   
-  ## Run sim over n simulations
+  # 1. Define the two arms
   
-  # Control
+  arms <- c("Control", "Intervention")
   
-  purrr::map_dfr(seq_len(n_power), \(i) {
-    run_and_clean_verbose(
-      verbose_protocol = verbose_protocol,
-      run_note = "control",
-      key_intervention = "none",
-      analysis_cohort_protocol = analysis_cohort_protocol
-    ) %>%
-      dplyr::mutate(sim = i)
-  }) %>%
-    write.csv(paste0("outputs/cohort_data/", trial_id, "_control.csv"), row.names = FALSE)
+  # 2. Run every sim and cluster within each arm
   
-  # Intervention
+  # Simple, sequential, lapply
+  # arm_results <- lapply(arms, function(run) {
   
-  purrr::map_dfr(seq_len(n_power), \(i) {
-    run_and_clean_verbose(
-      verbose_protocol = verbose_protocol,
-      run_note = "intervention",
-      key_intervention = key_intervention,
-      intervention_protocol = intervention_protocol,
-      analysis_cohort_protocol = analysis_cohort_protocol
-    ) %>%
-      dplyr::mutate(sim = i)
-  }) %>%
-    write.csv(paste0("outputs/cohort_data/", trial_id, "_intervention.csv"), row.names = FALSE)
+  # Local, parallel, lapply
+  future.apply::future_lapply(arms, function(run) {
+    
+    intervention_arm <- run == "Intervention"
+    
+    purrr::map_dfr(seq_len(n_power), function(sim) {
+      
+      purrr::map_dfr(seq_len(n_clusters), function(cluster_within_arm) {
+        
+        # This assigns _id to be unique across both arms,
+        # i.e. sequential starting with control then intervention.
+        cluster_id <- if (intervention_arm) {
+          n_clusters + cluster_within_arm
+        } else {
+          cluster_within_arm
+        }
+        
+        run_and_clean_verbose(
+          # Same verbose protocol for both arms
+          run_note = paste(tolower(run), sim, cluster_id, sep = "_"),
+          verbose_protocol = verbose_protocol,
+          # Assign intervention parameters only to the intervention arm
+          key_intervention = if (intervention_arm) {
+            key_intervention
+          } else {
+            "none"
+          },
+          intervention_protocol = if (intervention_arm) {
+            intervention_protocol
+          } else {
+            NULL
+          },
+          # Same analysis cohort protocol for both arms
+          analysis_cohort_protocol = analysis_cohort_protocol
+        ) %>%
+          mutate(
+            sim = sim,
+            cluster_id = cluster_id,
+            run = run
+          )
+      })
+    })
+  })
   
+  # 3. Combine both arms
+  
+  cohort_data <- bind_rows(arm_results)
+  
+  # 4. Save one cohort file
+  
+  write.csv( cohort_data,
+    paste0("outputs/cohort_data/", trial_id, "_cohort.csv"),
+    row.names = FALSE)
+
+  # 5. Clean up the verbose_dump folder to save space
   
   unlink("verbose_dump/*")
+
 }

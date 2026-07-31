@@ -46,7 +46,7 @@ human_population <- 10000
 boolean_seasonality <- TRUE
 boolean_treatment <- TRUE
 boolean_bednets <- TRUE
-boolean_vaccine <- TRUE
+boolean_vaccine <- FALSE
 
 # Set length of sim
 
@@ -61,6 +61,10 @@ trial_start <- 1
 trial_second_intervention <- 3
 
 key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
+
+# Number of clusters
+
+n_clusters <- 10
 
 # Our follow-up cohort size (no individuals followed from total)
 
@@ -156,7 +160,9 @@ metadata <- create_trial_metadata(
   
   trial = list(
     trial_start = trial_start,
-    trial_second_intervention = trial_second_intervention
+    trial_second_intervention = trial_second_intervention,
+    n_clusters = n_clusters,
+    allocation = "1:1"
   ),
   intervention = c(
     list(key_intervention = key_intervention),
@@ -181,6 +187,7 @@ source("functions/verbose_tidy_outputs.R")
 
 sim_two_arm_trial(trial_id = trial_id,
                   n_power = n_power,
+                  n_clusters = n_clusters,
                   verbose_protocol = verbose_protocol,
                   key_intervention = key_intervention,
                   intervention_protocol = intervention_protocol,
