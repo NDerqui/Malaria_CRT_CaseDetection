@@ -137,7 +137,7 @@ sim_two_arm_trial <- function(trial_id, n_power, n_clusters,
   # arm_results <- lapply(arms, function(run) {
   
   # Local, parallel, lapply
-  future.apply::future_lapply(arms, function(run) {
+  arm_results <- future.apply::future_lapply(arms, function(run) {
     
     intervention_arm <- run == "Intervention"
     
@@ -178,7 +178,8 @@ sim_two_arm_trial <- function(trial_id, n_power, n_clusters,
           )
       })
     })
-  })
+  },
+  future.seed = TRUE)
   
   # 3. Combine both arms
   
@@ -187,7 +188,7 @@ sim_two_arm_trial <- function(trial_id, n_power, n_clusters,
   # 4. Save one cohort file
   
   write.csv( cohort_data,
-    paste0("outputs/cohort_data/", trial_id, "_cohort.csv"),
+    paste0("outputs/cohort_data/", trial_id, ".csv"),
     row.names = FALSE)
 
   # 5. Clean up the verbose_dump folder to save space

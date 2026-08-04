@@ -30,10 +30,12 @@ analyse_two_arm_trial <- function(trial_id,
   
   # Read the data just with the trial name
   
-  infections_control <- read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
-    filter(run == "Control")
-  infections_intervention <- read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
-    filter(run == "Intervention")
+  infections <- read.csv(paste0("outputs/cohort_data/", trial_id, ".csv"))
+  
+  infections_control <- infections %>% filter(run == "Control")
+  infections_intervention <- infections %>% filter(run == "Intervention")
+  
+  rm(infections)
   
   ## OUTCOMES (prev and inc)
   
@@ -82,7 +84,7 @@ analyse_two_arm_trial <- function(trial_id,
   # we can now get summaries (mean and 95%CI) across simulations for each measure and timestep
   
   possible_grouping_vars <- c(
-    "analysis_population", "run", "type_measure",
+    "run", "analysis_population", "type_measure", "cluster_id",
     "sim", "timestep", "period", "period_label")
   measures <- c("prevalence_infection", "prevalence_case",
                 "incidence_ppd_infection", "incidence_ppd_case",

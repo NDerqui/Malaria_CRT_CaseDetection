@@ -34,6 +34,11 @@ month <- 30
 # TRIAL SIM -----------------------------------------------------------------
 
 
+# Seed for reproducible simulations
+
+simulation_seed <- 1234
+
+
 #### set trial conditions ####
 
 # General inputs: init_EIR and total sim size (different to pop w/ analyses performed).
@@ -155,7 +160,8 @@ metadata <- create_trial_metadata(
     vaccine = boolean_vaccine,
     human_population = human_population,
     sim_length = sim_length,
-    snapshot_time = snapshot_time
+    snapshot_time = snapshot_time,
+    simulation_seed = simulation_seed
   ),
   
   trial = list(
@@ -178,24 +184,38 @@ metadata <- create_trial_metadata(
 trial_id <- metadata$trial_id
 trial_slug <- make_trial_slug(trial_name = trial_name)
 
+# Create output file structure
+
+make_output_dirs()
+
 
 #### run sim ####
+
+# Configure local parallel execution
+
+future::plan(future::multisession, workers = 2)
+
+set.seed(simulation_seed)
 
 # Running with the wrapper function(s)
 
 source("functions/verbose_tidy_outputs.R")
 
-sim_two_arm_trial(trial_id = trial_id,
-                  n_power = n_power,
-                  n_clusters = n_clusters,
-                  verbose_protocol = verbose_protocol,
-                  key_intervention = key_intervention,
-                  intervention_protocol = intervention_protocol,
-                  analysis_cohort_protocol = analysis_cohort_protocol)
+tryCatch(
+  {sim_two_arm_trial(
+      trial_id = trial_id,
+      n_power = n_power,
+      n_clusters = n_clusters,
+      verbose_protocol = verbose_protocol,
+      key_intervention = key_intervention,
+      intervention_protocol = intervention_protocol,
+      analysis_cohort_protocol = analysis_cohort_protocol)
+  },
+  finally = {future::plan(future::sequential)}
+)
 
 # Only save the metadata after a successful sim runs
 
-make_output_dirs()
 save_trial_metadata(metadata)
 
 
@@ -213,7 +233,8 @@ source("functions/verbose_visualisation.R")
 
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_control.png"),
     width = 14, height = 5, units = "in", res = 1200)
-read.csv(paste0("outputs/cohort_data/", trial_id, "_control.csv")) %>%
+read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
+  filter(run == "Control") %>%
   filter(sim == sample(x = unique(sim), size = 1)) %>%
   plot_verbose_itn(note = paste0("Control: ", trial_name), sim_length = sim_length,
                    human_population = human_population, trial_size = trial_size,
@@ -225,9 +246,10 @@ dev.off()
 
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_intervention.png"),
     width = 14, height = 5, units = "in", res = 1200)
-read.csv(paste0("outputs/cohort_data/", trial_id, "_intervention.csv")) %>%
+read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
+  filter(run == "Intervention") %>%
   filter(sim == sample(x = unique(sim), size = 1)) %>%
-plot_verbose_itn(note = paste0("Intervention: ", trial_name), sim_length = sim_length,
+  plot_verbose_itn(note = paste0("Intervention: ", trial_name), sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +

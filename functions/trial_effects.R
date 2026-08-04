@@ -105,7 +105,10 @@ estimate_hazard_ratio <- function(df,
     paste0("survival::Surv(", time_col, ", ", event_col, ") ~ ", model_covars))
   
   # Run our survival model
-  fit <- survival::coxph(model_formula, data = df)
+  fit <- survival::coxph(
+    model_formula, data = df,
+    cluster = df$cluster_id
+  )
   fit_summary <- summary(fit)
   
   # Save an object
