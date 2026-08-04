@@ -15,18 +15,18 @@ estimate_true_realtime_outcomes <- function(df) {
   
   require(dplyr)
   
-  grouping_vars <- c("analysis_population", "timestep", "sim")
+  grouping_vars <- c("analysis_population", "cluster_id", "timestep", "sim")
   
   # Prepare data once before grouped calcs
   # then get prevalence and incidence each timestep
   
   result <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(analysis_population, sim, individual_index, timestep) %>%
+    arrange(analysis_population, sim, cluster_id, individual_index, timestep) %>%
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    group_by(analysis_population, sim, individual_index) %>%
+    group_by(analysis_population, sim, cluster_id, individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each timestep calcs
@@ -65,18 +65,18 @@ estimate_true_realtime_outcomes_by_age <- function(df) {
   
   require(dplyr)
   
-  grouping_vars <- c("analysis_population", "timestep", "sim", "age_at_time_year")
+  grouping_vars <- c("analysis_population", "cluster_id", "timestep", "sim", "age_at_time_year")
   
   # Prepare data once before grouped calcs
   # then get prevalence and incidence each timestep
   
   result <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(analysis_population, sim, individual_index, timestep) %>%
+    arrange(analysis_population, sim, cluster_id, individual_index, timestep) %>%
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    group_by(analysis_population, sim, individual_index) %>%
+    group_by(analysis_population, sim, cluster_id, individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each timestep calcs
@@ -155,15 +155,15 @@ estimate_true_aggregate_incidence <- function(df, sim_start = 0,
   # Prepare data once before grouped calcs
   # then get aggregated incidence for each period
   
-  grouping_vars <- c("analysis_population", "period", "sim")
+  grouping_vars <- c("analysis_population", "cluster_id", "period", "sim")
   
   result <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(analysis_population, sim, individual_index, timestep) %>%
+    arrange(analysis_population, sim, cluster_id, individual_index, timestep) %>%
     ## Get no. at risk in this timestep considering prev timstep:
     # To later get no. at risk, get the state at our prior timestep.
     # No at risk of incident infection won't include infected in previous timestep.
-    group_by(analysis_population, sim, individual_index) %>%
+    group_by(analysis_population, sim, cluster_id, individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
     ## Ready for the each period calcs
@@ -185,7 +185,8 @@ estimate_true_aggregate_incidence <- function(df, sim_start = 0,
     # Cleaning
     filter(row_number() == 1) %>% ungroup() %>%
     mutate(type_measure = paste0("True, aggregate over ", followup_period_year*12, " mos.")) %>%
-    select(analysis_population, type_measure, timestep, sim, period, period_label,
+    select(analysis_population, type_measure, timestep, sim,
+           cluster_id, period, period_label,
            n, person_days_at_risk,
            new_infections, new_cases,
            incidence_ppd_infection, incidence_ppd_case,
@@ -216,11 +217,11 @@ estimate_survey_prevalence <- function(df, cross_surveys_in_years, trial_start) 
   # Prepare data once before grouped calcs
   # then get prevalence each timestep
   
-  grouping_vars <- c("analysis_population", "timestep", "sim")
+  grouping_vars <- c("analysis_population", "cluster_id", "timestep", "sim")
   
   result <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(analysis_population, sim, individual_index, timestep) %>%
+    arrange(analysis_population, sim, cluster_id, individual_index, timestep) %>%
     ## Ready for the each timestep calcs
     # Filter to each timestep and remove everyone dead by then (for denom)
     group_by(across(all_of(grouping_vars))) %>%
@@ -254,11 +255,11 @@ estimate_acd_incidence <- function(df, trial_start,
   
   df <- df %>%
     # To ensure timings of transitions come okay...
-    arrange(analysis_population, sim, individual_index, timestep) %>%
+    arrange(analysis_population, sim, cluster_id, individual_index, timestep) %>%
     ## For incidence calcs:
     # get no. at risk at each timestep considering prev timstep.
     # No at risk of incident infection won't include infected in previous timestep.
-    group_by(analysis_population, sim, individual_index) %>%
+    group_by(analysis_population, sim, cluster_id, individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup()
     
@@ -316,7 +317,7 @@ estimate_acd_incidence <- function(df, trial_start,
   # Prepare data once before grouped calcs
   # then get aggregated incidence for each period
   
-  grouping_vars <- c("analysis_population", "period", "sim")
+  grouping_vars <- c("analysis_population", "cluster_id", "period", "sim")
   
   result <- df %>%
     ## Ready for the each period calcs
@@ -341,7 +342,8 @@ estimate_acd_incidence <- function(df, trial_start,
                                 paste0("with ", days_catchment, " days window,"),
                                 paste("aggr. over ", followup_period_year*12, " mos."),
                                 sep = "\n")) %>%
-    select(analysis_population, type_measure, timestep, sim, period, period_label,
+    select(analysis_population, type_measure, timestep, sim,
+           cluster_id, period, period_label,
            n, person_days_at_risk,
            new_infections, new_cases,
            incidence_ppd_infection, incidence_ppd_case,

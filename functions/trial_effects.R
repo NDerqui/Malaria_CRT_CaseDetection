@@ -30,7 +30,7 @@ tidy_outcomes_for_effect <- function(df,
   df <- df %>%
     select(-any_of(c("n", "person_days_at_risk", "infections", "cases",
                      "new_infections", "new_cases", "period", "period_label"))) %>%
-    pivot_longer(-c(analysis_population, timestep, sim, type_measure, run),
+    pivot_longer(-c(analysis_population, timestep, sim, cluster_id, type_measure, run),
                  names_to = "measure", values_to = "value") %>%
     mutate(measure = factor(measure, levels = measures, labels = measures_labels))
   

@@ -30,8 +30,10 @@ analyse_two_arm_trial <- function(trial_id,
   
   # Read the data just with the trial name
   
-  infections_control <- read.csv(paste0("outputs/cohort_data/", trial_id, "_control.csv"))
-  infections_intervention <- read.csv(paste0("outputs/cohort_data/", trial_id, "_intervention.csv"))
+  infections_control <- read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
+    filter(run == "Control")
+  infections_intervention <- read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
+    filter(run == "Intervention")
   
   ## OUTCOMES (prev and inc)
   
