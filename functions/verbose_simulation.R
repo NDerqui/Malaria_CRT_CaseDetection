@@ -12,9 +12,8 @@
 # Verbose parameters are set here, so modify in advance.
 
 run_verbose_sim <- function(simparams, sim_length,
-                            ## Note for verbose dump file,
-                            # and timing for the age snapshot (time at which we get age for all alive)
-                            run_note = "", snapshot_time,
+                            ## Timing for the age snapshot (time at which we get age for all alive)
+                            snapshot_time,
                             # IMP: if we modified any of the default following pars,
                             # we need to set them here too, so that the verbose run is consistent with the baseline run.
                             baseline_bednets_timesteps = seq(1, sim_length, 3), # By default, bednet rounds every 3 years
@@ -172,17 +171,6 @@ run_verbose_sim <- function(simparams, sim_length,
   simparams$lower_age_bound <- 0
   simparams$upper_age_bound <- 1000*year
   simparams$state_recording_freq <- 1
-  
-  # Set a directory to dump the verbose file
-  
-  folder <- "verbose_dump"
-  
-  dir.create(paste0(folder, "/"), showWarnings = FALSE)
-  
-  # Set the verbose file name 
-  
-  simparams$file_name <- paste0(folder, "/", run_note, "_full_output.csv")
-  simparams$snapshot_file_name <- paste0(folder, "/", run_note, "_snapshot_age.csv")
   
   
   ## Run simulation

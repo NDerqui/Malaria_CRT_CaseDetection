@@ -9,8 +9,7 @@
 # then gets the analysis age-cohort to minimise what we need for each simulation.
 # Finally, detect infection states to run all verbose-functions in one step.
 
-run_and_clean_verbose <- function(run_note,
-                                  ## Shared verbose sim parameters
+run_and_clean_verbose <- function(## Shared verbose sim parameters
                                   verbose_protocol,
                                   ## Key intervention parameters
                                   key_intervention, intervention_protocol = NULL,
@@ -39,16 +38,13 @@ run_and_clean_verbose <- function(run_note,
   # Run and extract state
   
   sim_args <- c(verbose_protocol,
-                list(run_note = run_note, key_intervention = key_intervention))
+                list(key_intervention = key_intervention))
   
   if (!is.null(intervention_protocol)) {
     sim_args <- c(sim_args, intervention_protocol)
   }
   
   out <- do.call(run_verbose_sim, sim_args)
-  
-  # Option with local .csv
-  # df <- read.csv(paste0("verbose_dump/", run_note, "_full_output.csv"))
   
   # Option without csv dependency
   df <- out$verbose_data
@@ -59,13 +55,22 @@ run_and_clean_verbose <- function(run_note,
   # Some final clean
   df <- df %>%
     select(-process_index, -state_index) %>%
-    arrange(individual_index, timestep)
-  
-  rm(out)
+    arrange(individual_index, timestep) %>%
+    mutate(timestep = as.numeric(timestep),
+           individual_index = as.numeric(individual_index))
   
   # Read the age snapshot
   
-  df_age <- read.csv(paste0("verbose_dump/", run_note, "_snapshot_age.csv"))
+  df_age <- out$snapshot_data
+  
+  # Some final clean
+  df_age <- df_age %>%
+    mutate(timestep = as.numeric(timestep),
+           individual_index = as.numeric(individual_index),
+           ages = as.numeric(ages))
+  
+  rm(out)
+  gc()
   
   
   ## Simple clean to subtract to the cohort with age we want to follow.
@@ -155,7 +160,6 @@ sim_two_arm_trial <- function(trial_id, n_power, n_clusters,
         
         run_and_clean_verbose(
           # Same verbose protocol for both arms
-          run_note = paste(tolower(run), sim, cluster_id, sep = "_"),
           verbose_protocol = verbose_protocol,
           # Assign intervention parameters only to the intervention arm
           key_intervention = if (intervention_arm) {
@@ -190,9 +194,5 @@ sim_two_arm_trial <- function(trial_id, n_power, n_clusters,
   write.csv( cohort_data,
     paste0("outputs/cohort_data/", trial_id, ".csv"),
     row.names = FALSE)
-
-  # 5. Clean up the verbose_dump folder to save space
-  
-  unlink("verbose_dump/*")
 
 }
