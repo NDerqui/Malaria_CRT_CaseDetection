@@ -232,7 +232,7 @@ source("functions/verbose_visualisation.R")
 # Plot the control (no intervention)
 
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_control.png"),
-    width = 14, height = 5, units = "in", res = 1200)
+    width = 14, height = 10, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
   filter(run == "Control") %>%
   filter(sim == sample(x = unique(sim), size = 1)) %>%
@@ -245,7 +245,7 @@ dev.off()
 # Plot the intervention
 
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_intervention.png"),
-    width = 14, height = 5, units = "in", res = 1200)
+    width = 14, height = 10, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
   filter(run == "Intervention") %>%
   filter(sim == sample(x = unique(sim), size = 1)) %>%
