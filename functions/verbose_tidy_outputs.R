@@ -67,7 +67,8 @@ run_and_clean_verbose <- function(## Shared verbose sim parameters
   df_age <- df_age %>%
     mutate(timestep = as.numeric(timestep),
            individual_index = as.numeric(individual_index),
-           ages = as.numeric(ages))
+           ages = as.numeric(ages)) %>%
+    rename(age = ages)
   
   rm(out)
   gc()
