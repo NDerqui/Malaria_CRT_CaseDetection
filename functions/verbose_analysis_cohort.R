@@ -76,7 +76,7 @@ get_age_cohort <- function(df, age_snapshot, snapshot_time) {
   # Second, add the age of our snapshot to the main df
   
   age_snapshot <- age_snapshot %>%
-    # filter(timestep == snapshot_time) %>% # Ensure we are on the snapshot time
+    filter(timestep == snapshot_time) %>% # Ensure we are on the snapshot time
     select(individual_index, age) %>%
     rename(age_at_snapshot = age)
   
