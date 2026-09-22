@@ -30,7 +30,16 @@ analyse_two_arm_trial <- function(trial_id,
   
   # Read the data just with the trial name
   
-  infections <- read.csv(paste0("outputs/cohort_data/", trial_id, ".csv"))
+  file_path <- paste0("outputs/cohort_data/", trial_id, ".csv")
+  
+  if (file.exists(file_path)) {
+    
+    infections <- read.csv(file_path)
+  
+  } else {
+    
+    infections <- readRDS(paste0("outputs/cohort_data/", trial_id, ".rds"))
+  }
   
   infections_control <- infections %>% filter(run == "Control")
   infections_intervention <- infections %>% filter(run == "Intervention")
