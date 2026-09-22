@@ -60,6 +60,9 @@ estimate_relative_effect <- function(df,
   result <- df %>%
     # Select the cols we are interested in
     select(all_of(outcome_cols), arm = !!arm_col, value = !!value_col) %>%
+    # Average over clusters within each sim before pivoting
+    group_by(across(all_of(c(outcome_cols, "arm")))) %>%
+    summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
     # Pivot to compare each
     tidyr::pivot_wider(names_from = arm, values_from = value) %>%
     mutate(
