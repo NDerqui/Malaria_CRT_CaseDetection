@@ -196,7 +196,6 @@ analyse_two_arm_trial <- function(trial_id,
     estimates_true = estimates_true,
     estimates_survey = estimates_survey,
     estimates_acd = estimates_acd,
-    estimates_all = estimates_all,
     estimates_summary = estimates_summary,
     tte_true_1 = tte_true_1,
     tte_true_2 = tte_true_2,
@@ -224,7 +223,6 @@ save_two_arm_trial <- function(trial_results, trial_slug) {
   write.csv(trial_results$estimates_true, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_true.csv"), row.names = FALSE)
   write.csv(trial_results$estimates_survey, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_survey.csv"), row.names = FALSE)
   write.csv(trial_results$estimates_acd, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_acd.csv"), row.names = FALSE)
-  write.csv(trial_results$estimates_all, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_all.csv"), row.names = FALSE)
   write.csv(trial_results$estimates_summary, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_summary.csv"), row.names = FALSE)
   write.csv(trial_results$tte_true_1, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_true_1_intervention.csv"), row.names = FALSE)
   write.csv(trial_results$tte_true_2, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_true_2_intervention.csv"), row.names = FALSE)
