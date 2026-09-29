@@ -141,7 +141,7 @@ save_two_arm_trial_plots <- function(trial_results, trial_slug,
 
   plot_true_estimates <- ggplot(
     data = filter(
-      trial_results$estimates_all,
+      trial_results$estimates_summary,
       (type_measure == "True Instantaneous" & grepl("Prev", measure)) |
         (grepl("aggregate", type_measure) & grepl("p.p.y", measure) & !grepl("ACD", type_measure))),
     aes(x = timestep, y = mean, group = run, color = run)) +
@@ -165,7 +165,7 @@ save_two_arm_trial_plots <- function(trial_results, trial_slug,
 
   plot_incidence_estimates <- ggplot(
     data = filter(
-      trial_results$estimates_all, !is.na(mean),
+      trial_results$estimates_summary, !is.na(mean),
       grepl("p.p.y", measure) & !grepl("Ins", type_measure)),
     aes(x = timestep, y = mean, group = run, color = run)) +
     geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant, fill = run),
@@ -188,7 +188,7 @@ save_two_arm_trial_plots <- function(trial_results, trial_slug,
 
   plot_prevalence_estimates <- ggplot(
     data = filter(
-      trial_results$estimates_all, !is.na(mean),
+      trial_results$estimates_summary, !is.na(mean),
       grepl("Prevalence", measure)),
     aes(x = timestep, y = mean, group = run, color = run)) +
     geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant, fill = run),
@@ -254,49 +254,28 @@ save_two_arm_trial_plots <- function(trial_results, trial_slug,
             height = 10)
   
   
-  ## Kaplan Maier curves
+  ## Kaplan Maier curves (one file per analysis population)
 
-  save_plot(
-    plot_time_to_event_pair(
-      trial_results$tte_true_1,
-      sim_length = sim_length,
-      trial_title = paste0(trial_title, ": True time-to-event"),
-      x_label = "Year after trial start"
-    ),
-    paste0("outputs/plots/time_to_event/", trial_slug, "_true_1_intervention.png"),
-    width = 8, height = 8
+  tte_configs <- list(
+    list(data = "tte_true_1",  label = "True time-to-event",        x = "Year after trial start",        suffix = "_true_1_intervention"),
+    list(data = "tte_true_2",  label = "True time-to-event",        x = "Year after second intervention", suffix = "_true_2_intervention"),
+    list(data = "tte_acd_1",   label = "Time-to-event w/ ACD visits", x = "Year after trial start",       suffix = "_acd_1_intervention"),
+    list(data = "tte_acd_2",   label = "Time-to-event w/ ACD visits", x = "Year after second intervention", suffix = "_acd_2_intervention")
   )
 
-  save_plot(
-    plot_time_to_event_pair(
-      trial_results$tte_true_2,
-      sim_length = sim_length,
-      trial_title = paste0(trial_title, ": True time-to-event"),
-      x_label = "Year after second intervention"
-    ),
-    paste0("outputs/plots/time_to_event/", trial_slug, "_true_2_intervention.png"),
-    width = 8, height = 8
-  )
-
-  save_plot(
-    plot_time_to_event_pair(
-      trial_results$tte_acd_1,
-      sim_length = sim_length,
-      trial_title = paste0(trial_title, ": Time-to-event w/ ACD visits"),
-      x_label = "Year after trial start"
-    ),
-    paste0("outputs/plots/time_to_event/", trial_slug, "_acd_1_intervention.png"),
-    width = 8, height = 8
-  )
-
-  save_plot(
-    plot_time_to_event_pair(
-      trial_results$tte_acd_2,
-      sim_length = sim_length,
-      trial_title = paste0(trial_title, ": Time-to-event w/ ACD visits"),
-      x_label = "Year after second intervention"
-    ),
-    paste0("outputs/plots/time_to_event/", trial_slug, "_acd_2_intervention.png"),
-    width = 8, height = 8
-  )
+  for (cfg in tte_configs) {
+    tte_df <- trial_results[[cfg$data]]
+    for (ap in unique(tte_df$analysis_population)) {
+      save_plot(
+        plot_time_to_event_pair(
+          tte_df = filter(tte_df, analysis_population == ap),
+          sim_length = sim_length,
+          trial_title = paste0(trial_title, " [", ap, "]: ", cfg$label),
+          x_label = cfg$x
+        ),
+        paste0("outputs/plots/time_to_event/", trial_slug, cfg$suffix, "_", ap, ".png"),
+        width = 8, height = 8
+      )
+    }
+  }
 }
