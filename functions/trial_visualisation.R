@@ -135,123 +135,134 @@ save_two_arm_trial_plots <- function(trial_results, trial_slug,
   year <- 365
   
   
-  ## Prev/Inc estimates plots
-  
-  # One with the true estimates
+  analysis_populations <- unique(trial_results$estimates_summary$analysis_population)
 
-  plot_true_estimates <- ggplot(
-    data = filter(
-      trial_results$estimates_summary,
-      (type_measure == "True Instantaneous" & grepl("Prev", measure)) |
-        (grepl("aggregate", type_measure) & grepl("p.p.y", measure) & !grepl("ACD", type_measure))),
-    aes(x = timestep, y = mean, group = run, color = run)) +
-    geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant, fill = run),
-                alpha = 0.3, color = NA) +
-    geom_point() + geom_line() +
-    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
-    scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                       labels = 0:sim_length) +
-    labs(x = "Year", y = NULL, title = paste0(trial_title, ": True estimates")) +
-    theme_bw() +
-    theme(legend.position = "bottom", legend.title = element_blank()) +
-    facet_nested(type_measure + measure ~ ., scales = "free", drop = TRUE)
+  for (ap in analysis_populations) {
 
-  save_plot(plot_true_estimates,
-            paste0("outputs/plots/prevalence_incidence/", trial_slug, "_true_estimates.png"))
-  
-  # One for incidence estimates only
+    ## Prev/Inc estimates plots
 
-  plot_incidence_estimates <- ggplot(
-    data = filter(
-      trial_results$estimates_summary, !is.na(mean),
-      grepl("p.p.y", measure) & !grepl("Ins", type_measure)),
-    aes(x = timestep, y = mean, group = run, color = run)) +
-    geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant, fill = run),
-                alpha = 0.3, color = NA) +
-    geom_point() + geom_line() +
-    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
-    scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                       labels = 0:sim_length) +
-    labs(x = "Year", y = NULL, title = paste0(trial_title, ": Incidence estimates")) +
-    theme_bw() +
-    theme(legend.position = "bottom", legend.title = element_blank()) +
-    facet_nested(type_measure + measure ~ ., scales = "free", drop = TRUE)
+    # One with the true estimates
 
-  save_plot(plot_incidence_estimates,
-            paste0("outputs/plots/prevalence_incidence/", trial_slug, "_incidence_estimates.png"))
-  
-  # One for prevalence estimates only
+    plot_true_estimates <- ggplot(
+      data = filter(
+        trial_results$estimates_summary,
+        analysis_population == ap,
+        (type_measure == "True Instantaneous" & grepl("Prev", measure)) |
+          (grepl("aggregate", type_measure) & grepl("p.p.y", measure) & !grepl("ACD", type_measure))),
+      aes(x = timestep, y = mean, group = run, color = run)) +
+      geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant, fill = run),
+                  alpha = 0.3, color = NA) +
+      geom_point() + geom_line() +
+      geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
+      scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+      scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+      scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                         labels = 0:sim_length) +
+      labs(x = "Year", y = NULL, title = paste0(trial_title, " [", ap, "]: True estimates")) +
+      theme_bw() +
+      theme(legend.position = "bottom", legend.title = element_blank()) +
+      facet_nested(type_measure + measure ~ ., scales = "free", drop = TRUE)
 
-  plot_prevalence_estimates <- ggplot(
-    data = filter(
-      trial_results$estimates_summary, !is.na(mean),
-      grepl("Prevalence", measure)),
-    aes(x = timestep, y = mean, group = run, color = run)) +
-    geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant, fill = run),
-                alpha = 0.3, color = NA) +
-    geom_point(aes(shape = type_measure, size = type_measure)) +
-    geom_line() +
-    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
-    scale_shape_manual(breaks = c("True Instantaneous", "Cross-sectional surveys"),
-                       values = c(16:17)) +
-    scale_size_manual(breaks = c("True Instantaneous", "Cross-sectional surveys"),
-                      values = c(1, 4)) +
-    scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                       labels = 0:sim_length) +
-    labs(x = "Year", y = NULL, title = paste0(trial_title, ": Prevalence estimates")) +
-    theme_bw() +
-    theme(legend.position = "bottom", legend.title = element_blank()) +
-    facet_grid(measure ~ ., scales = "free")
+    save_plot(plot_true_estimates,
+              paste0("outputs/plots/prevalence_incidence/", trial_slug, "_true_estimates_", ap, ".png"))
 
-  save_plot(plot_prevalence_estimates,
-            paste0("outputs/plots/prevalence_incidence/", trial_slug, "_prevalence_estimates.png"),
-            height = 5)
-  
-  
-  ## Intervention protective effect plots
-  
-  # One for the prev/inc-based relative protective effect
+    # One for incidence estimates only
 
-  plot_relative_effect <- plot_protective_effect(
-    protective_effect = trial_results$relative_effect %>%
-      filter(
-        !is.na(mean),
-        !(type_measure == "True Instantaneous" & grepl("Incidence", measure)),
-        grepl("Infection Prev", measure) | grepl("Case Incidence p.p.y", measure)
-      ),
-    key_intervention_time = key_intervention_time,
-    sim_length = sim_length,
-    trial_title = paste0(trial_title, ": Relative protective effect")
-  )
+    plot_incidence_estimates <- ggplot(
+      data = filter(
+        trial_results$estimates_summary,
+        analysis_population == ap, !is.na(mean),
+        grepl("p.p.y", measure) & !grepl("Ins", type_measure)),
+      aes(x = timestep, y = mean, group = run, color = run)) +
+      geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant, fill = run),
+                  alpha = 0.3, color = NA) +
+      geom_point() + geom_line() +
+      geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
+      scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+      scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+      scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                         labels = 0:sim_length) +
+      labs(x = "Year", y = NULL, title = paste0(trial_title, " [", ap, "]: Incidence estimates")) +
+      theme_bw() +
+      theme(legend.position = "bottom", legend.title = element_blank()) +
+      facet_nested(type_measure + measure ~ ., scales = "free", drop = TRUE)
 
-  save_plot(plot_relative_effect,
-            paste0("outputs/plots/effect_size/", trial_slug, "_relative_effect.png"))
-  
-  # One with HRs
+    save_plot(plot_incidence_estimates,
+              paste0("outputs/plots/prevalence_incidence/", trial_slug, "_incidence_estimates_", ap, ".png"))
 
-  plot_all_effects <- plot_protective_effect(
-    protective_effect = trial_results$all_effects %>%
-      filter(
-        !is.na(mean),
-        !(type_measure == "True Instantaneous" & grepl("Incidence", measure)),
-        grepl("Infection Prev", measure) |
-          grepl("Case Incidence p.p.y", measure) |
-          (grepl("ime-to", type_measure) & grepl("Case", measure))
-      ),
-    key_intervention_time = key_intervention_time,
-    sim_length = sim_length,
-    trial_title = paste0(trial_title, ": Protective effect with hazard ratios")
-  )
+    # One for prevalence estimates only
 
-  save_plot(plot_all_effects,
-            paste0("outputs/plots/effect_size/", trial_slug, "_all_effects_with_hr.png"),
-            height = 10)
+    plot_prevalence_estimates <- ggplot(
+      data = filter(
+        trial_results$estimates_summary,
+        analysis_population == ap, !is.na(mean),
+        grepl("Prevalence", measure)),
+      aes(x = timestep, y = mean, group = run, color = run)) +
+      geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant, fill = run),
+                  alpha = 0.3, color = NA) +
+      geom_point(aes(shape = type_measure, size = type_measure)) +
+      geom_line() +
+      geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
+      scale_shape_manual(breaks = c("True Instantaneous", "Cross-sectional surveys"),
+                         values = c(16:17)) +
+      scale_size_manual(breaks = c("True Instantaneous", "Cross-sectional surveys"),
+                        values = c(1, 4)) +
+      scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+      scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+      scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
+                         labels = 0:sim_length) +
+      labs(x = "Year", y = NULL, title = paste0(trial_title, " [", ap, "]: Prevalence estimates")) +
+      theme_bw() +
+      theme(legend.position = "bottom", legend.title = element_blank()) +
+      facet_grid(measure ~ ., scales = "free")
+
+    save_plot(plot_prevalence_estimates,
+              paste0("outputs/plots/prevalence_incidence/", trial_slug, "_prevalence_estimates_", ap, ".png"),
+              height = 5)
+
+
+    ## Intervention protective effect plots
+
+    # One for the prev/inc-based relative protective effect
+
+    plot_relative_effect <- plot_protective_effect(
+      protective_effect = trial_results$relative_effect %>%
+        filter(
+          analysis_population == ap,
+          !is.na(mean),
+          !(type_measure == "True Instantaneous" & grepl("Incidence", measure)),
+          grepl("Infection Prev", measure) | grepl("Case Incidence p.p.y", measure)
+        ),
+      key_intervention_time = key_intervention_time,
+      sim_length = sim_length,
+      trial_title = paste0(trial_title, " [", ap, "]: Relative protective effect")
+    )
+
+    save_plot(plot_relative_effect,
+              paste0("outputs/plots/effect_size/", trial_slug, "_relative_effect_", ap, ".png"))
+
+    # One with HRs
+
+    plot_all_effects <- plot_protective_effect(
+      protective_effect = trial_results$all_effects %>%
+        filter(
+          analysis_population == ap,
+          !is.na(mean),
+          !(type_measure == "True Instantaneous" & grepl("Incidence", measure)),
+          grepl("Infection Prev", measure) |
+            grepl("Case Incidence p.p.y", measure) |
+            (grepl("ime-to", type_measure) & grepl("Case", measure))
+        ),
+      key_intervention_time = key_intervention_time,
+      sim_length = sim_length,
+      trial_title = paste0(trial_title, " [", ap, "]: Protective effect with hazard ratios")
+    )
+
+    save_plot(plot_all_effects,
+              paste0("outputs/plots/effect_size/", trial_slug, "_all_effects_with_hr_", ap, ".png"),
+              height = 10)
+
+  }
   
   
   ## Kaplan Maier curves (one file per analysis population)
