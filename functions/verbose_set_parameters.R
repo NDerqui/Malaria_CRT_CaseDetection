@@ -16,9 +16,9 @@
 set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               ## Some basic options
                               seasonality,
-                              season_g0 = 0,
-                              season_g = c(1, 0, 0),
-                              season_h = c(0, 0, 0),
+                              season_g0 = 0.284596,
+                              season_g = c(-0.317878,-0.0017527,0.116455),
+                              season_h = c(-0.331361,0.293128,-0.0617547),
                               ## Treatment pars
                               # Using default SP-AQ as per JC m/s
                               treatment, treat_timesteps = 0, # Treatment introduced at start (and not remove)
@@ -64,9 +64,9 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
     
     simparams$model_seasonality <- TRUE
     # Define the seasonality parameters as per malariaverse
-    simparams$g0 <- 0
-    simparams$g <- c(1, 0, 0)
-    simparams$h <- c(0, 0, 0)
+    simparams$g0 <- season_g0
+    simparams$g <- season_g
+    simparams$h <- season_h
   }
   
   # Run the equilibrium after setting the seasonality
