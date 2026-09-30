@@ -50,6 +50,7 @@ human_population <- 10000
 
 boolean_seasonality <- TRUE
 boolean_treatment <- TRUE
+boolean_mass_clearance <- TRUE
 boolean_bednets <- TRUE
 boolean_vaccine <- FALSE
 
@@ -85,7 +86,7 @@ n_power <- 10
 
 # Add a "trial name" to keep track of results
 
-trial_name <- "High transmission test for workflow"
+trial_name <- "Test of new treatment"
 
 
 #### sim pars ####
@@ -99,12 +100,15 @@ source("functions/verbose_set_parameters.R")
 # With this function, we set baseline parameters
 # (including seasonality, treatment use, base bednet use, etc.)
 # to be used in intervention and control runs.
+# Also, include as mass drug administration at the start of the trial to clear infection if desired.
 
 baseline_parameters <- set_baseline_pars(sim_length = sim_length,
                                          init_EIR = init_EIR,
                                          human_population = human_population,
                                          seasonality = boolean_seasonality,
                                          treatment = boolean_treatment,
+                                         mass_clearance = boolean_mass_clearance,
+                                         mass_clearance_timestep = trial_start,
                                          bednets = boolean_bednets,
                                          vaccine = boolean_vaccine)
 

@@ -27,7 +27,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               ## Mass clearance of infection
                               # At the trial start, treat 100% to clear infection
                               mass_clearance,
-                              trial_start,
+                              mass_clearance_timestep = NULL, # Set to null in case above is FALSE
                               ## Bednet pars (coverage, etc. default)
                               # By default in these sims, parameters constant over time
                               bednets,
@@ -91,7 +91,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
         # then SP-AQ is introduced at coverage (which in this case is at time 0),
         # drig coverage increases to 100% at the trial start to clear infection, then back to baseline coverage
         set_clinical_treatment(drug = 1,
-                               timesteps = c(treat_timesteps*year, trial_start*year, trial_start*year + 7),
+                               timesteps = c(treat_timesteps*year, mass_clearance_timestep*year, mass_clearance_timestep*year + 7),
                                coverages = c(treat_coverage, 1, treat_coverage)) %>% 
         set_equilibrium(init_EIR = init_EIR)
       
@@ -103,7 +103,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
         # then SP-AQ is introduced at coverage (which in this case is at time 0),
         # drig coverage increases to 100% at the trial start to clear infection, then back to baseline coverage
         set_clinical_treatment(drug = 1,
-                               timesteps = trial_start*year,
+                               timesteps = mass_clearance_timestep*year,
                                coverages = 1) %>% 
         set_equilibrium(init_EIR = init_EIR)
     }
