@@ -20,9 +20,9 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               season_g = c(-0.317878,-0.0017527,0.116455),
                               season_h = c(-0.331361,0.293128,-0.0617547),
                               ## Treatment pars
-                              # Using default SP-AQ as per JC m/s
+                              # Using default AL as per JC m/s
                               treatment, treat_timesteps = 0, # Treatment introduced at start (and not remove)
-                              treat_coverage = 0.75,          # Treatment administered to 75%
+                              treat_coverage = 0.5,          # Treatment administered to 75%
                               ## Bednet pars (coverage, etc. default)
                               # By default in these sims, parameters constant over time
                               bednets,
@@ -79,7 +79,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
   if (treatment) {
     
     simparams <- simparams %>%
-      set_drugs(list(SP_AQ_params)) %>%
+      set_drugs(list(AL_params)) %>%
       # Initial coverage (before our first introduction of treatment) is default 0%,
       # then SP-AQ is introduced at coverage (which in this case is at time 0)
       set_clinical_treatment(drug = 1,
