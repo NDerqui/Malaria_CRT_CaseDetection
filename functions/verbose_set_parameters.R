@@ -20,9 +20,14 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               season_g = c(-0.317878,-0.0017527,0.116455),
                               season_h = c(-0.331361,0.293128,-0.0617547),
                               ## Treatment pars
-                              # Using default AL as per JC m/s
-                              treatment, treat_timesteps = 0, # Treatment introduced at start (and not remove)
+                              # Using default AL as per JC m/s (baseline treatment)
+                              treatment,
+                              treat_timesteps = 0,           # Treatment introduced at start (and not remove)
                               treat_coverage = 0.5,          # Treatment administered to 75%
+                              ## Mass clearance of infection
+                              # At the trial start, treat 100% to clear infection
+                              mass_clearance,
+                              trial_start,
                               ## Bednet pars (coverage, etc. default)
                               # By default in these sims, parameters constant over time
                               bednets,
@@ -74,18 +79,48 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
   simparams <- simparams  %>%
     set_equilibrium(init_EIR = init_EIR)
   
-  # Set treatment pars if adding that option
+  # Set treatment pars if adding that option / clearing at start of trial
   
-  if (treatment) {
+  if (mass_clearance) {
     
-    simparams <- simparams %>%
-      set_drugs(list(AL_params)) %>%
-      # Initial coverage (before our first introduction of treatment) is default 0%,
-      # then SP-AQ is introduced at coverage (which in this case is at time 0)
-      set_clinical_treatment(drug = 1,
-                             timesteps = treat_timesteps * year,
-                             coverages = treat_coverage) %>% 
-      set_equilibrium(init_EIR = init_EIR)
+    if (treatment) { # Mass clearance and baseline treatment
+      
+      simparams <- simparams %>%
+        set_drugs(list(AL_params)) %>%
+        # Initial coverage (before our first introduction of treatment) is default 0%,
+        # then SP-AQ is introduced at coverage (which in this case is at time 0),
+        # drig coverage increases to 100% at the trial start to clear infection, then back to baseline coverage
+        set_clinical_treatment(drug = 1,
+                               timesteps = c(treat_timesteps*year, trial_start*year, trial_start*year + 7),
+                               coverages = c(treat_coverage, 1, treat_coverage)) %>% 
+        set_equilibrium(init_EIR = init_EIR)
+      
+    } else { # Mass clearance but no baseline treatment (just clear at trial start)
+      
+      simparams <- simparams %>%
+        set_drugs(list(AL_params)) %>%
+        # Initial coverage (before our first introduction of treatment) is default 0%,
+        # then SP-AQ is introduced at coverage (which in this case is at time 0),
+        # drig coverage increases to 100% at the trial start to clear infection, then back to baseline coverage
+        set_clinical_treatment(drug = 1,
+                               timesteps = trial_start*year,
+                               coverages = 1) %>% 
+        set_equilibrium(init_EIR = init_EIR)
+    }
+    
+  } else {
+    
+    if (treatment) { #Baseline treatment but no mass clearance
+      
+      simparams <- simparams %>%
+        set_drugs(list(AL_params)) %>%
+        # Initial coverage (before our first introduction of treatment) is default 0%,
+        # then SP-AQ is introduced at coverage (which in this case is at time 0)
+        set_clinical_treatment(drug = 1,
+                               timesteps = treat_timesteps * year,
+                               coverages = treat_coverage) %>% 
+        set_equilibrium(init_EIR = init_EIR)
+    }
   }
   
   # Set bednets pars
