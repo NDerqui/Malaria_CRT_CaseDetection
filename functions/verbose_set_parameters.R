@@ -23,7 +23,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               # Using default AL as per JC m/s (baseline treatment)
                               treatment,
                               treat_timesteps = 0,           # Treatment introduced at start (and not remove)
-                              treat_coverage = 0.5,          # Treatment administered to 75%
+                              treat_coverage = 0.5,          # Treatment administered to 50%
                               ## Mass clearance of infection
                               # At the trial start, treat 100% to clear infection
                               mass_clearance,
@@ -79,48 +79,33 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
   simparams <- simparams  %>%
     set_equilibrium(init_EIR = init_EIR)
   
-  # Set treatment pars if adding that option / clearing at start of trial
+  # Set clearing at start of trial (MDA at 100% of people)
   
   if (mass_clearance) {
     
-    if (treatment) { # Mass clearance and baseline treatment
-      
-      simparams <- simparams %>%
-        set_drugs(list(AL_params)) %>%
-        # Initial coverage (before our first introduction of treatment) is default 0%,
-        # then SP-AQ is introduced at coverage (which in this case is at time 0),
-        # drig coverage increases to 100% at the trial start to clear infection, then back to baseline coverage
-        set_clinical_treatment(drug = 1,
-                               timesteps = c(treat_timesteps*year, mass_clearance_timestep, mass_clearance_timestep + 7),
-                               coverages = c(treat_coverage, 1, treat_coverage)) %>% 
-        set_equilibrium(init_EIR = init_EIR)
-      
-    } else { # Mass clearance but no baseline treatment (just clear at trial start)
-      
-      simparams <- simparams %>%
-        set_drugs(list(AL_params)) %>%
-        # Initial coverage (before our first introduction of treatment) is default 0%,
-        # then SP-AQ is introduced at coverage (which in this case is at time 0),
-        # drig coverage increases to 100% at the trial start to clear infection, then back to baseline coverage
-        set_clinical_treatment(drug = 1,
-                               timesteps = mass_clearance_timestep*year,
-                               coverages = 1) %>% 
-        set_equilibrium(init_EIR = init_EIR)
-    }
+    simparams <- simparams %>%
+      set_drugs(list(SP_AQ_params)) %>%
+      # Specify a coverage of 100% for out MDA and age ranges that guarantee everyone is cleared
+      set_mda(drug = 1,
+              timesteps = mass_clearance_timestep*year,
+              coverages = 1,
+              min_ages = rep(0, length(mass_clearance_timestep)),
+              max_ages = rep(200 * year, length(mass_clearance_timestep))) %>% 
+      set_equilibrium(init_EIR = init_EIR)
+  }
+  
+  # Set baseline treatment for symptomatic
+  
+  if (treatment) { 
     
-  } else {
-    
-    if (treatment) { #Baseline treatment but no mass clearance
-      
-      simparams <- simparams %>%
-        set_drugs(list(AL_params)) %>%
-        # Initial coverage (before our first introduction of treatment) is default 0%,
-        # then SP-AQ is introduced at coverage (which in this case is at time 0)
-        set_clinical_treatment(drug = 1,
-                               timesteps = treat_timesteps * year,
-                               coverages = treat_coverage) %>% 
-        set_equilibrium(init_EIR = init_EIR)
-    }
+    simparams <- simparams %>%
+      set_drugs(list(AL_params)) %>%
+      # Initial coverage (before our first introduction of treatment) is default 0%,
+      # then AL is introduced at coverage (which unless changed is at time 0 at 50%)
+      set_clinical_treatment(drug = 1,
+                             timesteps = treat_timesteps * year,
+                             coverages = treat_coverage) %>% 
+      set_equilibrium(init_EIR = init_EIR)
   }
   
   # Set bednets pars
