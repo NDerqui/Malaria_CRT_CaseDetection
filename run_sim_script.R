@@ -46,7 +46,7 @@ simulation_seed <- 1234
 
 init_EIR <- 25
 
-human_population <- 10000
+human_population <- 1000
 
 boolean_seasonality <- TRUE
 boolean_treatment <- TRUE
@@ -68,13 +68,17 @@ trial_second_intervention <- 3
 
 key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
+# Set a time for mass clearance of infection before (2 weeks) the start of the trial
+
+mass_clearance_timestep <- (trial_start * year) - 14
+
 # Number of clusters
 
-n_clusters <- 10
+n_clusters <- 20
 
 # Our follow-up cohort size (no individuals followed from total)
 
-trial_size <- 200
+trial_size <- 30
 
 # Control when we get our age snapshot (best at start of trial, timestep = 1)
 
@@ -108,7 +112,7 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
                                          seasonality = boolean_seasonality,
                                          treatment = boolean_treatment,
                                          mass_clearance = boolean_mass_clearance,
-                                         mass_clearance_timestep = trial_start,
+                                         mass_clearance_timestep = mass_clearance_timestep,
                                          bednets = boolean_bednets,
                                          vaccine = boolean_vaccine)
 
@@ -243,7 +247,7 @@ read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
   plot_verbose_itn(note = paste0("Control: ", trial_name), sim_length = sim_length,
                    human_population = human_population, trial_size = trial_size,
                    bednetstimesteps = seq(0, sim_length, 3)*year) +
-  facet_grid(analysis_population ~ ., scales = "free_y")
+  facet_grid(analysis_population ~ cluster_id, scales = "free_y")
 dev.off()
 
 # Plot the intervention
@@ -257,5 +261,5 @@ read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-  facet_grid(analysis_population ~ ., scales = "free_y")
+  facet_grid(analysis_population ~ cluster_id, scales = "free_y")
 dev.off()
