@@ -247,7 +247,7 @@ read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
   plot_verbose_itn(note = paste0("Control: ", trial_name), sim_length = sim_length,
                    human_population = human_population, trial_size = trial_size,
                    bednetstimesteps = seq(0, sim_length, 3)*year) +
-  facet_grid(analysis_population ~ cluster_id, scales = "free_y")
+  facet_grid(analysis_population ~ cluster_id, scales = "free")
 dev.off()
 
 # Plot the intervention
@@ -261,5 +261,5 @@ read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
                  human_population = human_population, trial_size = trial_size,
                  bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-  facet_grid(analysis_population ~ cluster_id, scales = "free_y")
+  facet_grid(analysis_population ~ cluster_id, scales = "free")
 dev.off()
