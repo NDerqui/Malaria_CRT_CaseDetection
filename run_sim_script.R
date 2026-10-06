@@ -240,26 +240,28 @@ source("functions/verbose_visualisation.R")
 # Plot the control (no intervention)
 
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_control.png"),
-    width = 14, height = 10, units = "in", res = 1200)
+    width = 12, height = 10, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
   filter(run == "Control") %>%
   filter(sim == sample(x = unique(sim), size = 1)) %>%
+  filter(cluster_id == sample(x = unique(cluster_id), size = 5)) %>%
   plot_verbose_itn(note = paste0("Control: ", trial_name), sim_length = sim_length,
                    human_population = human_population, trial_size = trial_size,
-                   bednetstimesteps = seq(0, sim_length, 3)*year) +
-  facet_grid(analysis_population ~ cluster_id, scales = "free")
+                   bednetstimesteps = seq(1, sim_length, 3)*year) +
+  facet_wrap(analysis_population ~ cluster_id, scales = "free")
 dev.off()
 
 # Plot the intervention
 
 png(filename = paste0("outputs/plots/cohort/agecohort_", trial_slug, "_intervention.png"),
-    width = 14, height = 10, units = "in", res = 1200)
+    width = 12, height = 10, units = "in", res = 1200)
 read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
   filter(run == "Intervention") %>%
   filter(sim == sample(x = unique(sim), size = 1)) %>%
+  filter(cluster_id == sample(x = unique(cluster_id), size = 5)) %>%
   plot_verbose_itn(note = paste0("Intervention: ", trial_name), sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
-                 bednetstimesteps = seq(0, sim_length, 3)*year) +
+                 bednetstimesteps = seq(1, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-  facet_grid(analysis_population ~ cluster_id, scales = "free")
+  facet_wrap(analysis_population ~ cluster_id, scales = "free")
 dev.off()
