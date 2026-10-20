@@ -37,7 +37,7 @@ month <- 30
 
 # Get the general conditions from the metadata, which we load with trial name
 
-trial_name <- "High transmission test for workflow"
+trial_name <- "High transmission, seasonal"
 metadata <- load_trial_metadata(trial_name)
 
 trial_id <- metadata$trial_id
