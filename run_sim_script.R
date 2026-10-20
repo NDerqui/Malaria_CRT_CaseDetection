@@ -63,8 +63,8 @@ sim_length <- 6
 
 key_intervention <- "bednet"
 
-trial_start <- 1
-trial_second_intervention <- 3
+trial_start <- 4
+trial_second_intervention <- NULL
 
 key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
