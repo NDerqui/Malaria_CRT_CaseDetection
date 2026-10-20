@@ -22,7 +22,9 @@ run_verbose_sim <- function(simparams, sim_length,
                             baseline_bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
                             baseline_bed_rn = 0.568,      # Repelling probabilities for each mosquito species 
                             baseline_bed_rnm = 0.24,      # Minimum repelling probabilities for each mosquito species
-                            baseline_bed_gamman = 2.226, # Bed net half-lives
+                            baseline_bed_gamman = 2.226,  # Bed net half-lives
+                            # Put a logical for baseline (control) arm to have same bednet coverage as the intervention arm (TRUE) or not (FALSE).
+                            baseline_coverage_as_intervention = TRUE,
                             # For the vaccine too!
                             baseline_vax_timesteps = 1,   # Round of vaccination is at 1st year into the simulation.
                             baseline_vax_profile = rtss_profile, # Implementation of the RTSS vaccine.
@@ -111,6 +113,22 @@ run_verbose_sim <- function(simparams, sim_length,
     simparams[["bednet_rnm"]][index_key_intervention] <- intervention_bed_rnm
     simparams[["bednet_gamman"]][index_key_intervention] <- intervention_bed_gamman * year
 
+  }
+  
+  # Often, in bednet trials, it is expected that the overall bednet coverage
+  # (including intervention bednet but also regular bednet use) increases.
+  
+  if (baseline_coverage_as_intervention) {
+    
+    # Get all of our bednet timesteps
+    bednets_timesteps <- sort(unique(c(baseline_bednets_timesteps, key_intervention_time)))
+    
+    # Get the index for that intervention timepoint(s)
+    index_key_intervention <- which(bednets_timesteps %in% key_intervention_time)
+    
+    # And subscribe that parameter in that timepoint(s)
+    simparams[["bednet_coverages"]][index_key_intervention] <- intervention_bed_coverage
+    
   }
   
   # Re-set vaccine pars if this is the key intervention of interest
