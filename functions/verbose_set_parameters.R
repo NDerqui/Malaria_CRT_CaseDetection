@@ -37,7 +37,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               baseline_bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
                               baseline_bed_rn = 0.568,      # Repelling probabilities for each mosquito species 
                               baseline_bed_rnm = 0.24,      # Minimum repelling probabilities for each mosquito species
-                              baseline_bed_gamman = 2.64,   # Bed net half-lives
+                              baseline_bed_gamman = 2.226,  # Bed net half-lives
                               ## Vaccine routine admin pars (coverage, etc. default)
                               # By default in these sims, parameters constant over time
                               vaccine,

@@ -22,7 +22,7 @@ run_verbose_sim <- function(simparams, sim_length,
                             baseline_bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
                             baseline_bed_rn = 0.568,      # Repelling probabilities for each mosquito species 
                             baseline_bed_rnm = 0.24,      # Minimum repelling probabilities for each mosquito species
-                            baseline_bed_gamman = 2.64,   # Bed net half-lives
+                            baseline_bed_gamman = 2.226, # Bed net half-lives
                             # For the vaccine too!
                             baseline_vax_timesteps = 1,   # Round of vaccination is at 1st year into the simulation.
                             baseline_vax_profile = rtss_profile, # Implementation of the RTSS vaccine.
