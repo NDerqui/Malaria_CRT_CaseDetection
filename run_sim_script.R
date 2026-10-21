@@ -155,11 +155,11 @@ intervention_protocol <- list(
   intervention_bed_rn = 0.5319)
 
 analysis_populations <- tibble::tribble(
-  ~analysis_population, ~age_min, ~age_max,
-  "age_0_5",                    0,        5,
-  "age_5_15",                   5,       15,
-  "age_15_plus",               15,      100,
-  "all_ages",                   0,      100
+  ~analysis_population, ~age_min, ~age_max,  ~all_cleared,
+  "age_0_5",                    0,        5,         TRUE,  
+  "age_5_15",                   5,       15,         TRUE,
+  "age_15_plus",               15,      100,        FALSE,
+  "all_ages",                   0,      100,        FALSE
 )
 
 analysis_cohort_protocol <- list(
