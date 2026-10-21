@@ -70,7 +70,7 @@ key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
 mass_clearance_timestep <- (trial_start * year) - 14
 mass_clearance_min_age <- 0
-mass_clearance_min_age <- 15
+mass_clearance_max_age <- 15
 
 # Number of clusters
 
