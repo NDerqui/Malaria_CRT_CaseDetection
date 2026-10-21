@@ -115,22 +115,39 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
                                          mass_clearance = boolean_mass_clearance,
                                          mass_clearance_timestep = mass_clearance_timestep,
                                          bednets = boolean_bednets,
+                                         baseline_bed_coverage = 0.6,
+                                         baseline_bed_retention = 4,
+                                         baseline_bed_dn0 = 0.2218,
+                                         baseline_bed_rn = 0.7208,
+                                         baseline_bed_rnm = 0.24,
+                                         baseline_bed_gamman = (2.05/log(2)),
                                          vaccine = boolean_vaccine)
 
 ## Create protocols for our simulation and intervention
 
 # Put the options for the verbose run,
 # the intervention and the analysis cohort in lists to pass to the wrapper function.
+# Note the intervention protocol is only passed to the intervention arm,
+# so any modification to default pars for baseline conditions need to be passed in verbose_protocol.
 # This includes the population(s) age boundary(ies) for the follow-up cohort.
 
 verbose_protocol <- list(
   simparams = baseline_parameters,
   sim_length = sim_length,
-  snapshot_time = snapshot_time)
+  snapshot_time = snapshot_time,
+  # Add to both arms the same baseline bednet coverage and retention parameters
+  baseline_bed_coverage = 0.6,
+  baseline_bed_retention = 4,
+  baseline_bed_dn0 = 0.2218,
+  baseline_bed_rn = 0.7208,
+  baseline_bed_rnm = 0.24,
+  baseline_bed_gamman = (2.05/log(2)))
 
 intervention_protocol <- list(
   key_intervention_time = key_intervention_time,
-  intervention_bed_coverage = 0.95)
+  intervention_bed_coverage = 0.8,  
+  intervention_bed_dn0 = 0.4616,     
+  intervention_bed_rn = 0.5319)
 
 analysis_populations <- tibble::tribble(
   ~analysis_population, ~age_min, ~age_max,
