@@ -41,12 +41,9 @@ simulation_seed <- 1234
 
 #### set trial conditions ####
 
-# General inputs: init_EIR and total sim size (different to pop w/ analyses performed).
-# Then, general baseline conditions (shared across control and intervention).
+# General inputs: init_EIR and general baseline conditions (shared across control and intervention).
 
 init_EIR <- 25
-
-human_population <- 1000
 
 boolean_seasonality <- TRUE
 boolean_treatment <- TRUE
@@ -76,7 +73,11 @@ mass_clearance_timestep <- (trial_start * year) - 14
 
 n_clusters <- 20
 
-# Our follow-up cohort size (no individuals followed from total)
+# Human population size (per cluster)
+
+human_population <- 1000
+
+# Our follow-up cohort size (no individuals followed from total, per cluster)
 
 trial_size <- 30
 
@@ -135,6 +136,7 @@ analysis_populations <- tibble::tribble(
   ~analysis_population, ~age_min, ~age_max,
   "age_0_5",                    0,        5,
   "age_5_15",                   5,       15,
+  "age_15_plus",               15,      100,
   "all_ages",                   0,      100
 )
 
