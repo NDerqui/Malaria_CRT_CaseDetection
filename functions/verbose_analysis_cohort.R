@@ -136,7 +136,7 @@ get_age_cohort <- function(df, age_snapshot, snapshot_time) {
 # thus need to run function after getting the timestep_died.
 
 get_enrol_sample <- function(df, alive_by = min(df$timestep), trial_size,
-                             age_min = 0, age_max = 100) {
+                             age_min = 0, age_max = 100, all_cleared = TRUE) {
   
   year <- 365
   
@@ -145,21 +145,37 @@ get_enrol_sample <- function(df, alive_by = min(df$timestep), trial_size,
   # First, filter to individuals alive at our timepoint of interest (e.g. trial start):
   # They must have not died but also they must have been born by then.
   # (By default, those alive at start of sim, smallest timestep)
-  # Trials clear of infection at trial start, so need to filter
-  # to individuals that are S or Tr on trial start.
-  # (S for not infected or Tr for when a round of mass drug is given to clear infection)
-  # Finally, if desired, sample only a particular age group at our timepoint
-  # (by default, everyone 0-100 years)
   
   df <- df %>%
     filter(timestep_born < alive_by) %>%
-    filter(is.na(timestep_died) | timestep_died > alive_by) %>%
-    group_by(individual_index) %>%
-    filter(any(timestep == alive_by & state %in% c("S", "Tr"))) %>%
-    ungroup() %>%
+    filter(is.na(timestep_died) | timestep_died > alive_by)
+  
+  # Trials must chose to clear infection at trial start the age cohort to follow,
+  # so, in that cohort, need to filter to individuals that are S or Tr on trial start.
+  # (S for not infected or Tr for when a round of mass drug is given to clear infection)
+  # NOTE: this filtering step might depend on whether a particular age cohort
+  # is followed from all_cleared or not.
+  
+  if (all_cleared) {
+    
+    # If we want that cohort to be cleared, only allow S or Tr at start
+    states_at_start <- c("S", "Tr")
+    
+  } else {
+      
+    # If we do not care for clearance in that cohort, all states allowed
+    states_at_start <- c("S", "D", "A", "U", "Tr")
+  }
+  
+  # Finally, if desired, sample only a particular age group at our timepoint
+  
+  df <- df %>%
     # With the age group, we want people that at trial start have a particular age
     group_by(individual_index) %>%
-    mutate(in_age_group = any(age_at_time[timestep == alive_by] >= (age_min * year) & age_at_time[timestep == alive_by] <= (age_max * year))) %>%
+    mutate(in_age_group = any((age_at_time[timestep == alive_by] >= (age_min * year)) &
+                                (age_at_time[timestep == alive_by] <= (age_max * year)) &
+                                (state[timestep == alive_by] %in% states_at_start)
+                                )) %>%
     ungroup() %>%
     filter(in_age_group) %>% select(-in_age_group)
   
@@ -191,14 +207,15 @@ get_enrol_samples <- function(df, alive_by, trial_size,
   
   purrr::pmap_dfr(
     analysis_populations,
-    function(analysis_population, age_min, age_max) {
+    function(analysis_population, age_min, age_max, all_cleared) {
       
       get_enrol_sample(
         df = df,
         alive_by = alive_by,
         trial_size = trial_size,
         age_min = age_min,
-        age_max = age_max
+        age_max = age_max,
+        all_cleared = all_cleared
       ) %>%
         mutate(analysis_population = analysis_population)
     }
