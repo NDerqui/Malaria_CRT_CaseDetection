@@ -65,10 +65,10 @@ trial_second_intervention <- NULL
 
 key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
-# Set a time for mass clearance of infection before (2 weeks) the start of the trial
+# Set a time for mass clearance of infection before (a weeks) the start of the trial
 # and the target population of such mass clearance (particular age group?)
 
-mass_clearance_timestep <- (trial_start * year) - 14
+mass_clearance_timestep <- (trial_start * year) - 7
 mass_clearance_min_age <- 0
 mass_clearance_max_age <- 15
 
