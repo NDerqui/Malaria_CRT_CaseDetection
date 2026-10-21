@@ -90,7 +90,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
       # Specify a coverage of 100% for out MDA and age ranges that guarantee everyone is cleared
       set_mda(drug = 1,
               timesteps = mass_clearance_timestep*year,
-              coverages = 1,
+              coverages = 0.6,
               min_ages = rep(mass_clearance_min_age * year, length(mass_clearance_timestep)),
               max_ages = rep(mass_clearance_max_age * year, length(mass_clearance_timestep))) %>% 
       set_equilibrium(init_EIR = init_EIR)
