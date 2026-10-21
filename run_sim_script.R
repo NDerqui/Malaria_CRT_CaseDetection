@@ -66,8 +66,11 @@ trial_second_intervention <- NULL
 key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
 
 # Set a time for mass clearance of infection before (2 weeks) the start of the trial
+# and the target population of such mass clearance (particular age group?)
 
 mass_clearance_timestep <- (trial_start * year) - 14
+mass_clearance_min_age <- 0
+mass_clearance_min_age <- 15
 
 # Number of clusters
 
@@ -114,6 +117,8 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
                                          treatment = boolean_treatment,
                                          mass_clearance = boolean_mass_clearance,
                                          mass_clearance_timestep = mass_clearance_timestep,
+                                         mass_clearance_min_age = mass_clearance_min_age,
+                                         mass_clearance_max_age = mass_clearance_max_age,
                                          bednets = boolean_bednets,
                                          baseline_bed_coverage = 0.6,
                                          baseline_bed_retention = 4,
