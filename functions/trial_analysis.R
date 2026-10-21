@@ -132,51 +132,70 @@ analyse_two_arm_trial <- function(trial_id,
               .groups = "drop")
   
   ## OUTCOMES (time to event)
-  
+
+  has_second_intervention <- !is.null(trial_second_intervention) && !is.na(trial_second_intervention)
+
   # Get true time-to-event estimates for first infection/case from the first intervention
-  
+
   tte_true_1 <- bind_rows(
     infections_control %>% estimate_true_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Control"),
     infections_intervention %>% estimate_true_time_to_event(time_inter = trial_start*year) %>% mutate(run = "Intervention")
   ) %>%
     prepare_time_to_event_survival(time_inter = trial_start*year, sim_length = sim_length*year)
-  
-  # Get true time-to-event estimates for first infection/case from the second intervention
-  
-  tte_true_2 <- bind_rows(
-    infections_control %>% estimate_true_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Control"),
-    infections_intervention %>% estimate_true_time_to_event(time_inter = (trial_start + trial_second_intervention)*year) %>% mutate(run = "Intervention")
-  ) %>%
-    prepare_time_to_event_survival(time_inter = (trial_start + trial_second_intervention)*year, sim_length = sim_length*year)
-  
+
+  # Get true time-to-event estimates for first infection/case from the second intervention (if any)
+
+  tte_true_2 <- if (has_second_intervention) {
+    t2 <- (trial_start + trial_second_intervention) * year
+    bind_rows(
+      infections_control %>% estimate_true_time_to_event(time_inter = t2) %>% mutate(run = "Control"),
+      infections_intervention %>% estimate_true_time_to_event(time_inter = t2) %>% mutate(run = "Intervention")
+    ) %>%
+      prepare_time_to_event_survival(time_inter = t2, sim_length = sim_length*year)
+  } else NULL
+
   # Get time-to-event estimates for first infection/case from the first intervention as if doing ACD
-  
+
   tte_acd_1 <- bind_rows(
     inject(infections_control %>% estimate_acd_time_to_event(time_inter = trial_start*year, !!!acd_protocol)) %>% mutate(run = "Control"),
     inject(infections_intervention %>% estimate_acd_time_to_event(time_inter = trial_start*year, !!!acd_protocol)) %>% mutate(run = "Intervention")
   ) %>%
     prepare_time_to_event_survival(time_inter = trial_start*year, sim_length = sim_length*year)
-  
-  # Get time-to-event estimates for first infection/case from the second intervention as if doing ACD
-  
-  tte_acd_2 <- bind_rows(
-    inject(infections_control %>% estimate_acd_time_to_event(time_inter = (trial_start + trial_second_intervention)*year, !!!acd_protocol)) %>% mutate(run = "Control"),
-    inject(infections_intervention %>% estimate_acd_time_to_event(time_inter = (trial_start + trial_second_intervention)*year, !!!acd_protocol)) %>% mutate(run = "Intervention")
-  ) %>%
-    prepare_time_to_event_survival(time_inter = (trial_start + trial_second_intervention)*year, sim_length = sim_length*year)
-  
-  # Put all estimates together and calculate hazard ratios
-  # Once we have all HR for all sim, estimate summaries across sims
-  
-  hazard_ratio <- bind_rows(
-    estimate_hazard_ratio_by_sim(tte_true_1, "time_to_case", "ever_case") %>% mutate(type_measure = "True Time-to-event", timestep = (trial_start + trial_second_intervention)*year),
-    estimate_hazard_ratio_by_sim(tte_true_2, "time_to_case", "ever_case") %>% mutate(type_measure = "True Time-to-event", timestep = sim_length*year),
-    estimate_hazard_ratio_by_sim(tte_acd_1, "time_to_case", "ever_case") %>% mutate(type_measure = "Time-to-event w/ ACD visits", timestep = (trial_start + trial_second_intervention)*year),
-    estimate_hazard_ratio_by_sim(tte_acd_2, "time_to_case", "ever_case") %>% mutate(type_measure = "Time-to-event w/ ACD visits", timestep = sim_length*year)
-  ) %>%
-    mutate(measure = "Case Hazard Ratio",
-           effect = 1 - hazard_ratio) %>%
-    # Create mean and 95%CI across simulations
+
+  # Get time-to-event estimates for first infection/case from the second intervention as if doing ACD (if any)
+
+  tte_acd_2 <- if (has_second_intervention) {
+    t2 <- (trial_start + trial_second_intervention) * year
+    bind_rows(
+      inject(infections_control %>% estimate_acd_time_to_event(time_inter = t2, !!!acd_protocol)) %>% mutate(run = "Control"),
+      inject(infections_intervention %>% estimate_acd_time_to_event(time_inter = t2, !!!acd_protocol)) %>% mutate(run = "Intervention")
+    ) %>%
+      prepare_time_to_event_survival(time_inter = t2, sim_length = sim_length*year)
+  } else NULL
+
+  # Put all estimates together and calculate hazard ratios (case and infection).
+  # Once we have all HR for all sim, estimate summaries across sims.
+
+  t_end_1 <- if (has_second_intervention) (trial_start + trial_second_intervention)*year else sim_length*year
+
+  hr_parts <- list(
+    estimate_hazard_ratio_by_sim(tte_true_1, "time_to_case",     "ever_case")     %>% mutate(type_measure = "True Time-to-event",          measure = "Case Hazard Ratio",      timestep = t_end_1),
+    estimate_hazard_ratio_by_sim(tte_true_1, "time_to_infection", "ever_infected") %>% mutate(type_measure = "True Time-to-event",          measure = "Infection Hazard Ratio", timestep = t_end_1),
+    estimate_hazard_ratio_by_sim(tte_acd_1,  "time_to_case",     "ever_case")     %>% mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Case Hazard Ratio",      timestep = t_end_1),
+    estimate_hazard_ratio_by_sim(tte_acd_1,  "time_to_infection", "ever_infected") %>% mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Infection Hazard Ratio", timestep = t_end_1)
+  )
+
+  if (has_second_intervention) {
+    hr_parts <- c(hr_parts, list(
+      estimate_hazard_ratio_by_sim(tte_true_2, "time_to_case",     "ever_case")     %>% mutate(type_measure = "True Time-to-event",          measure = "Case Hazard Ratio",      timestep = sim_length*year),
+      estimate_hazard_ratio_by_sim(tte_true_2, "time_to_infection", "ever_infected") %>% mutate(type_measure = "True Time-to-event",          measure = "Infection Hazard Ratio", timestep = sim_length*year),
+      estimate_hazard_ratio_by_sim(tte_acd_2,  "time_to_case",     "ever_case")     %>% mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Case Hazard Ratio",      timestep = sim_length*year),
+      estimate_hazard_ratio_by_sim(tte_acd_2,  "time_to_infection", "ever_infected") %>% mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Infection Hazard Ratio", timestep = sim_length*year)
+    ))
+  }
+
+  hazard_ratio <- bind_rows(hr_parts) %>%
+    mutate(effect = 1 - hazard_ratio) %>%
     group_by(across(c("analysis_population", "type_measure", "measure", "timestep"))) %>%
     mutate(mean = mean(effect, na.rm = TRUE),
            lower_95quant = quantile(effect, probs = 0.025, na.rm = TRUE),
@@ -225,9 +244,11 @@ save_two_arm_trial <- function(trial_results, trial_slug) {
   write.csv(trial_results$estimates_acd, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_acd.csv"), row.names = FALSE)
   write.csv(trial_results$estimates_summary, file = paste0("outputs/estimates/prevalence_incidence/", trial_slug, "_summary.csv"), row.names = FALSE)
   write.csv(trial_results$tte_true_1, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_true_1_intervention.csv"), row.names = FALSE)
-  write.csv(trial_results$tte_true_2, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_true_2_intervention.csv"), row.names = FALSE)
+  if (!is.null(trial_results$tte_true_2))
+    write.csv(trial_results$tte_true_2, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_true_2_intervention.csv"), row.names = FALSE)
   write.csv(trial_results$tte_acd_1, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_acd_1_intervention.csv"), row.names = FALSE)
-  write.csv(trial_results$tte_acd_2, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_acd_2_intervention.csv"), row.names = FALSE)
+  if (!is.null(trial_results$tte_acd_2))
+    write.csv(trial_results$tte_acd_2, file = paste0("outputs/estimates/time_to_event/", trial_slug, "_acd_2_intervention.csv"), row.names = FALSE)
   write.csv(trial_results$relative_effect, file = paste0("outputs/estimates/effect_size/", trial_slug, "_relative_effect.csv"), row.names = FALSE)
   write.csv(trial_results$hazard_ratio, file = paste0("outputs/estimates/effect_size/", trial_slug, "_hazard_ratio.csv"), row.names = FALSE)
   write.csv(trial_results$all_effects, file = paste0("outputs/estimates/effect_size/", trial_slug, "_all_effects.csv"), row.names = FALSE)
