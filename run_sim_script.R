@@ -146,7 +146,8 @@ verbose_protocol <- list(
   baseline_bed_dn0 = 0.2218,
   baseline_bed_rn = 0.7208,
   baseline_bed_rnm = 0.24,
-  baseline_bed_gamman = (2.05/log(2)))
+  baseline_bed_gamman = (2.05/log(2)),
+  intervention_bed_coverage = 0.8)
 
 intervention_protocol <- list(
   key_intervention_time = key_intervention_time,
