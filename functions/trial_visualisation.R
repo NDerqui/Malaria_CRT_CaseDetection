@@ -50,7 +50,7 @@ tidy_plot_labels <- function(df) {
       # Re-order measures so they come in specific order if several in same plot
       effect_order = dplyr::case_when(
         (grepl("Prevalence", measure) & grepl("True", type_measure))  ~ 1L,
-        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2L,
+        (grepl("Prevalence", measure) & grepl("survey", type_measure)) ~ 2L,
         (grepl("Incidence",  measure) & grepl("True", type_measure))  ~ 3L,
         (grepl("Incidence",  measure) & grepl("ACD",  type_measure))  ~ 4L,
         (grepl("Hazard",     measure) & grepl("True", type_measure))  ~ 5L,
@@ -187,7 +187,7 @@ plot_cohort_comparison_survey_prev <- function(estimates_summary, key_interventi
   df <- estimates_summary %>%
     filter(!is.na(mean),
            as.character(measure) %in% measures_to_show,
-           grepl("Survey", type_measure)) %>%
+           grepl("survey", type_measure)) %>%
     tidy_plot_labels()
   
   .cohort_comparison_base(df, key_intervention_time, sim_length,
