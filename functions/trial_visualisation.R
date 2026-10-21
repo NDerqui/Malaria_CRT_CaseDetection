@@ -8,6 +8,10 @@
 # Functions to do some basic plots for verbose trail analyses' outputs.
 
 
+
+# GENERAL -----------------------------------------------------------------
+
+
 # First, a function to save plots with
 # (default) width and height, and a resolution of 1200 dpi.
 
@@ -18,7 +22,15 @@ save_plot <- function(plot, filename, width = 12, height = 8) {
 }
 
 
-# Get general functions for protective effect and time-to-event
+
+# PE / TIME-TO-EVENT ------------------------------------------------------
+
+
+## These plots' section are related to the estimated effect size or HR,
+## not disease levels (incidence and prevalence).
+
+
+# Get general functions for protective effect
 
 plot_protective_effect <- function(protective_effect, key_intervention_time,
                                    sim_length, trial_title) {
@@ -32,10 +44,13 @@ plot_protective_effect <- function(protective_effect, key_intervention_time,
   protective_effect <- protective_effect %>%
     mutate(
       effect_order = case_when(
-        grepl("Prevalence", measure) ~ 1,
-        grepl("Incidence", measure) ~ 2,
-        grepl("Hazard Ratio", measure) ~ 3,
-        TRUE ~ 4
+        (grepl("Prevalence", measure) & grepl("True", type_measure)) ~ 1,
+        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2,
+        (grepl("Incidence", measure) & grepl("True", type_measure)) ~ 3,
+        (grepl("Incidence", measure) & grepl("ACD", type_measure)) ~ 4,
+        (grepl("Hazard Ratio", measure) & grepl("True", type_measure)) ~ 5,
+        (grepl("Hazard Ratio", measure) & grepl("ACD", type_measure)) ~ 6,
+        TRUE ~ 7
       ),
       type_measure = forcats::fct_reorder(type_measure, effect_order, .fun = min),
       measure = forcats::fct_reorder(measure, effect_order, .fun = min)
@@ -60,6 +75,82 @@ plot_protective_effect <- function(protective_effect, key_intervention_time,
     theme(legend.position = "bottom", legend.title = element_blank()) +
     facet_nested(type_measure + measure ~ ., scales = "free")
 }
+
+
+# EFFECT BY COHORT
+# Effect sizes for all populations overlaid; colour = population.
+
+plot_effect_by_cohort <- function(effects_df, key_intervention_time, sim_length, trial_title) {
+  
+  year <- 365
+  
+  require(ggplot2)
+  require(ggh4x)
+  require(dplyr)
+  require(rcartocolor)
+  
+  # Get the number of populations and assign colours to each population
+  
+  n_pops <- length(unique(effects_df$analysis_population))
+  pop_colors <- carto_pal(name = "Safe")[seq_len(n_pops)]
+  
+  # Facets ordered and legible legend
+  
+  effects_df <- effects_df %>%
+    filter(!is.na(mean)) %>%
+    mutate(
+      effect_order = case_when(
+        (grepl("Prevalence", measure) & grepl("True", type_measure)) ~ 1,
+        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2,
+        (grepl("Incidence", measure) & grepl("True", type_measure)) ~ 3,
+        (grepl("Incidence", measure) & grepl("ACD", type_measure)) ~ 4,
+        (grepl("Hazard Ratio", measure) & grepl("True", type_measure)) ~ 5,
+        (grepl("Hazard Ratio", measure) & grepl("ACD", type_measure)) ~ 6,
+        TRUE ~ 7
+      ),
+      type_measure = forcats::fct_reorder(type_measure, effect_order, .fun = min),
+      measure = forcats::fct_reorder(measure, effect_order, .fun = min)
+    ) %>%
+    mutate(
+      analysis_population_order = case_when(
+        grepl("all", analysis_population) ~ 1,
+        grepl("0_5", analysis_population) ~ 2,
+        grepl("5_15", analysis_population) ~ 3,
+        grepl("15_plus", analysis_population) ~ 4,
+        TRUE ~ 5
+      ),
+      analysis_population = forcats::fct_reorder(analysis_population, analysis_population_order, .fun = min),
+      analysis_population = gsub("all_", "All ", analysis_population),
+      analysis_population = gsub("age_", "Ages  ", analysis_population),
+      analysis_population = gsub("_", "-", analysis_population)
+    )
+  
+  # Plot itself
+  
+  ggplot(effects_df, aes(x = timestep, y = mean,
+                         color = analysis_population, fill = analysis_population,
+                         group = analysis_population)) +
+    geom_ribbon(data = filter(effects_df, grepl("Ins", type_measure)),
+                aes(ymin = lower_95quant, ymax = upper_95quant), alpha = 0.2, color = NA) +
+    geom_errorbar(data = filter(effects_df, !grepl("Ins", type_measure)),
+                  aes(ymin = lower_95quant, ymax = upper_95quant),
+                  width = 0.2, position = position_dodge(width = 50)) +
+    geom_point(position = position_dodge(width = 50)) +
+    geom_line() +
+    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
+    scale_color_manual(values = pop_colors) +
+    scale_fill_manual(values = pop_colors) +
+    scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
+    scale_y_continuous(labels = scales::percent, limits = 0:1) +
+    labs(x = "Year", y = "Protective Effect",
+         title = paste0(trial_title, ": Effect size by age cohort"),
+         color = "Population", fill = "Population") +
+    theme_bw() +
+    theme(legend.position = "bottom") +
+    facet_nested(type_measure + measure ~ ., scales = "free")
+}
+
+# Get general functions for protective effect and time-to-event
 
 plot_time_to_event_pair <- function(tte_df, sim_length, trial_title, x_label) {
   
@@ -114,6 +205,8 @@ plot_time_to_event_pair <- function(tte_df, sim_length, trial_title, x_label) {
 
   annotate_figure(ggarrange(p_infection, p_case, nrow = 2), top = trial_title)
 }
+
+
 
 
 # CLUSTER VARIABILITY
@@ -191,54 +284,8 @@ plot_cohort_comparison <- function(estimates_summary, key_intervention_time, sim
 }
 
 
-# EFFECT BY COHORT
-# Effect sizes for all populations overlaid; colour = population.
 
-plot_effect_by_cohort <- function(effects_df, key_intervention_time, sim_length, trial_title) {
-  year <- 365
-  require(ggplot2)
-  require(ggh4x)
-  require(dplyr)
-  require(rcartocolor)
-
-  n_pops <- length(unique(effects_df$analysis_population))
-  pop_colors <- carto_pal(name = "Safe")[seq_len(n_pops)]
-
-  effects_df <- effects_df %>%
-    filter(!is.na(mean)) %>%
-    mutate(
-      effect_order = case_when(
-        grepl("Prevalence", measure) ~ 1,
-        grepl("Incidence", measure) ~ 2,
-        grepl("Hazard Ratio", measure) ~ 3,
-        TRUE ~ 4
-      ),
-      type_measure = forcats::fct_reorder(type_measure, effect_order, .fun = min),
-      measure = forcats::fct_reorder(measure, effect_order, .fun = min)
-    )
-
-  ggplot(effects_df, aes(x = timestep, y = mean,
-                          color = analysis_population, fill = analysis_population,
-                          group = analysis_population)) +
-    geom_ribbon(data = filter(effects_df, grepl("Ins", type_measure)),
-                aes(ymin = lower_95quant, ymax = upper_95quant), alpha = 0.2, color = NA) +
-    geom_errorbar(data = filter(effects_df, !grepl("Ins", type_measure)),
-                  aes(ymin = lower_95quant, ymax = upper_95quant),
-                  width = 0.2, position = position_dodge(width = 50)) +
-    geom_point(position = position_dodge(width = 50)) +
-    geom_line() +
-    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
-    scale_color_manual(values = pop_colors) +
-    scale_fill_manual(values = pop_colors) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
-    scale_y_continuous(labels = scales::percent, limits = 0:1) +
-    labs(x = "Year", y = "Protective Effect",
-         title = paste0(trial_title, ": Effect size by age cohort"),
-         color = "Population", fill = "Population") +
-    theme_bw() +
-    theme(legend.position = "bottom") +
-    facet_nested(type_measure + measure ~ ., scales = "free")
-}
+# WRAPPER -----------------------------------------------------------------
 
 
 # A wrapper to save all the basic plots for a two-arm trial analysis,
