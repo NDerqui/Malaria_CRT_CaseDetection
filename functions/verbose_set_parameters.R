@@ -31,7 +31,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               ## Bednet pars (coverage, etc. default)
                               # By default in these sims, parameters constant over time
                               bednets,
-                              baseline_bednets_timesteps = seq(1, sim_length, 3), # By default, bednet rounds every 3 years
+                              baseline_bednets_timesteps = seq(0, sim_length, 3), # By default, bednet rounds every 3 years
                               baseline_bed_coverage = 0.5,  # Each round is distributed to 50% of the population.
                               baseline_bed_retention = 5,   # Nets are kept on average 5 years
                               baseline_bed_dn0 = 0.352,     # Death probabilities for each mosquito species 

@@ -56,14 +56,14 @@ boolean_vaccine <- FALSE
 
 # Set length of sim
 
-sim_length <- 6
+sim_length <- 5
 
 # Set the intervention and when do our interventions start.
 # We can do two interventions, timing of second calculated with respect to first.
 
 key_intervention <- "bednet"
 
-trial_start <- 4
+trial_start <- 3
 trial_second_intervention <- NULL
 
 key_intervention_time <- c(trial_start, trial_start+trial_second_intervention)
@@ -247,7 +247,7 @@ read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
   filter(cluster_id == sample(x = unique(cluster_id), size = 5)) %>%
   plot_verbose_itn(note = paste0("Control: ", trial_name), sim_length = sim_length,
                    human_population = human_population, trial_size = trial_size,
-                   bednetstimesteps = seq(1, sim_length, 3)*year) +
+                   bednetstimesteps = seq(0, sim_length, 3)*year) +
   facet_wrap(analysis_population ~ cluster_id, scales = "free")
 dev.off()
 
@@ -261,7 +261,7 @@ read.csv(paste0("outputs/cohort_data/", trial_id, ".csv")) %>%
   filter(cluster_id == sample(x = unique(cluster_id), size = 5)) %>%
   plot_verbose_itn(note = paste0("Intervention: ", trial_name), sim_length = sim_length,
                  human_population = human_population, trial_size = trial_size,
-                 bednetstimesteps = seq(1, sim_length, 3)*year) +
+                 bednetstimesteps = seq(0, sim_length, 3)*year) +
   geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
   facet_wrap(analysis_population ~ cluster_id, scales = "free")
 dev.off()

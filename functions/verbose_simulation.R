@@ -16,7 +16,7 @@ run_verbose_sim <- function(simparams, sim_length,
                             snapshot_time,
                             # IMP: if we modified any of the default following pars,
                             # we need to set them here too, so that the verbose run is consistent with the baseline run.
-                            baseline_bednets_timesteps = seq(1, sim_length, 3), # By default, bednet rounds every 3 years
+                            baseline_bednets_timesteps = seq(0, sim_length, 3), # By default, bednet rounds every 3 years
                             baseline_bed_coverage = 0.5,  # Each round is distributed to 50% of the population.
                             baseline_bed_retention = 5,   # Nets are kept on average 5 years
                             baseline_bed_dn0 = 0.352,     # Death probabilities for each mosquito species 
