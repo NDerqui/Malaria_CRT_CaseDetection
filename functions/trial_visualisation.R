@@ -16,9 +16,212 @@
 # (default) width and height, and a resolution of 1200 dpi.
 
 save_plot <- function(plot, filename, width = 12, height = 8) {
+  
   png(filename = filename, width = width, height = height, units = "in", res = 1200)
   print(plot)
   dev.off()
+
+  }
+
+# Shared label-tidying helper: clean population names, order facets consistently.
+# Apply to any df before plotting to avoid repeating this block in every function.
+
+tidy_plot_labels <- function(df) {
+  
+  df %>%
+    mutate(
+      # Get rid of ugly age labels
+      analysis_population = dplyr::case_when(
+        grepl("^all", as.character(analysis_population)) ~ "All ages",
+        TRUE ~ gsub("_", "-", gsub("age_", "Ages ", as.character(analysis_population)))
+      ),
+      # Re-order analysis cohorts so they come in specific orders
+      analysis_population = forcats::fct_reorder(
+        analysis_population,
+        dplyr::case_when(
+          grepl("All", analysis_population) ~ 1L,
+          grepl("0-5", analysis_population) ~ 2L,
+          grepl("5-15", analysis_population) ~ 3L,
+          grepl("15-", analysis_population) ~ 4L,
+          TRUE ~ 5L
+        ),
+        .fun = min
+      ),
+      # Re-order measures so they come in specific order if several in same plot
+      effect_order = dplyr::case_when(
+        (grepl("Prevalence", measure) & grepl("True", type_measure))  ~ 1L,
+        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2L,
+        (grepl("Incidence",  measure) & grepl("True", type_measure))  ~ 3L,
+        (grepl("Incidence",  measure) & grepl("ACD",  type_measure))  ~ 4L,
+        (grepl("Hazard",     measure) & grepl("True", type_measure))  ~ 5L,
+        (grepl("Hazard",     measure) & grepl("ACD",  type_measure))  ~ 6L,
+        TRUE ~ 7L
+      ),
+      type_measure = forcats::fct_reorder(as.character(type_measure), effect_order, .fun = min),
+      measure      = forcats::fct_reorder(as.character(measure),      effect_order, .fun = min)
+    ) %>%
+    select(-effect_order)
+}
+
+
+
+# DISEASE LEVELS ------------------------------------------------------
+
+
+## Following functions are designed to compare disease levels (prev and incidence)
+## across age populations and clusters.
+
+
+# Across clustes (just as check - only with true instantaneous measures)
+
+plot_cluster_variability <- function(estimates_df, key_intervention_time, sim_length, trial_title,
+                                     measures_to_show = c("Infection Prevalence", "Case Incidence p.p.day"),
+                                     type_to_show     = "True Instantaneous") {
+  
+  # Requirements
+  
+  year <- 365
+  require(ggplot2)
+  require(dplyr)
+  require(ggh4x)
+  require(rcartocolor)
+  
+  # Data preparations
+  
+  df <- estimates_df %>%
+    filter(!is.na(mean),
+           as.character(measure)      %in% measures_to_show,
+           as.character(type_measure) %in% type_to_show) %>%
+    tidy_plot_labels()
+  
+  df_mean <- df %>%
+    group_by(run, timestep, measure, type_measure, analysis_population) %>%
+    summarise(mean = mean(mean, na.rm = TRUE), .groups = "drop")
+  
+  # Plot
+  
+  ggplot(df, aes(x = timestep, y = mean,
+                 group = interaction(cluster_id, run), color = run)) +
+    geom_line(alpha = 0.3, linewidth = 0.4) +
+    geom_line(data = df_mean, aes(group = run), linewidth = 1.1) +
+    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
+    scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+    scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
+    scale_y_continuous(labels = scales::percent) +
+    labs(x = "Year", y = "Estimate",
+         title = paste0(trial_title, ": Cluster variability")) +
+    theme_bw() +
+    theme(legend.position = "bottom", legend.title = element_blank()) +
+    ggh4x::facet_grid2(analysis_population ~ measure, scales = "free_y", independent = "y")
+}
+
+
+# Shared internals for cohort-comparison plots (prev, true inc, ACD inc).
+
+.cohort_comparison_base <- function(df, key_intervention_time, sim_length,
+                                    title, errorbar = FALSE) {
+  
+  # Requirements
+  
+  year      <- 365
+  
+  # Getting an idea on number of age cohorts and assigning colors
+  
+  n_pops    <- length(unique(df$analysis_population))
+  pop_colors <- rcartocolor::carto_pal(name = "Safe")[seq_len(n_pops)]
+  
+  # Plot
+  
+  p <- ggplot(df, aes(x = timestep, y = mean,
+                      color = analysis_population, fill = analysis_population,
+                      linetype = run,
+                      group = interaction(analysis_population, run))) +
+    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
+    scale_color_manual(values = pop_colors) +
+    scale_fill_manual(values  = pop_colors) +
+    scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
+    scale_y_continuous(labels = scales::percent) +
+    labs(x = "Year", y = "Estimate", title = title,
+         color = "Population", fill = "Population", linetype = "Arm") +
+    theme_bw() +
+    theme(legend.position = "bottom") +
+    ggh4x::facet_grid2(type_measure + measure ~ ., scales = "free_y", independent = "y")
+  
+  # Error bar or ribbon depending on whether continuous or point estimate
+  
+  if (errorbar) {
+    p <- p +
+      geom_errorbar(aes(ymin = lower_95quant, ymax = upper_95quant),
+                    width = 0.2, position = position_dodge(width = 50)) +
+      geom_point(position = position_dodge(width = 50)) +
+      geom_line()
+  } else {
+    p <- p +
+      geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant), alpha = 0.15, color = NA) +
+      geom_line()
+  }
+  p
+}
+
+# Bul of functions to get different true or observed prevalence / incidence
+
+plot_cohort_comparison_true_prev <- function(estimates_summary, key_intervention_time, sim_length, trial_title,
+                                             measures_to_show = c("Infection Prevalence", "Case Prevalence")) {
+  require(ggplot2); require(dplyr); require(ggh4x); require(rcartocolor)
+  
+  df <- estimates_summary %>%
+    filter(!is.na(mean),
+           as.character(measure) %in% measures_to_show,
+           type_measure == "True Instantaneous") %>%
+    tidy_plot_labels()
+  
+  .cohort_comparison_base(df, key_intervention_time, sim_length,
+                          title = paste0(trial_title, ": True instantaneous estimates by age cohort"),
+                          errorbar = FALSE)
+}
+
+plot_cohort_comparison_survey_prev <- function(estimates_summary, key_intervention_time, sim_length, trial_title,
+                                               measures_to_show = c("Infection Prevalence", "Case Prevalence")) {
+  require(ggplot2); require(dplyr); require(ggh4x); require(rcartocolor)
+  
+  df <- estimates_summary %>%
+    filter(!is.na(mean),
+           as.character(measure) %in% measures_to_show,
+           grepl("Survey", type_measure)) %>%
+    tidy_plot_labels()
+  
+  .cohort_comparison_base(df, key_intervention_time, sim_length,
+                          title = paste0(trial_title, ": Estimates observed by cross-sectional surveys"),
+                          errorbar = TRUE)
+}
+
+plot_cohort_comparison_true_inc <- function(estimates_summary, key_intervention_time, sim_length, trial_title) {
+  require(ggplot2); require(dplyr); require(ggh4x); require(rcartocolor)
+  
+  df <- estimates_summary %>%
+    filter(!is.na(mean),
+           grepl("p.p.y", as.character(measure)),
+           grepl("True.*[Aa]g", type_measure)) %>%
+    tidy_plot_labels()
+  
+  .cohort_comparison_base(df, key_intervention_time, sim_length,
+                          title = paste0(trial_title, ": True aggregate incidence by age cohort"),
+                          errorbar = TRUE)
+}
+
+
+plot_cohort_comparison_acd_inc <- function(estimates_summary, key_intervention_time, sim_length, trial_title) {
+  require(ggplot2); require(dplyr); require(ggh4x); require(rcartocolor)
+  
+  df <- estimates_summary %>%
+    filter(!is.na(mean),
+           grepl("p.p.y", as.character(measure)),
+           grepl("ACD", type_measure)) %>%
+    tidy_plot_labels()
+  
+  .cohort_comparison_base(df, key_intervention_time, sim_length,
+                          title = paste0(trial_title, ": Incidence observed by ACD by age cohort"),
+                          errorbar = TRUE)
 }
 
 
@@ -29,35 +232,25 @@ save_plot <- function(plot, filename, width = 12, height = 8) {
 ## These plots' section are related to the estimated effect size or HR,
 ## not disease levels (incidence and prevalence).
 
-
 # Get general functions for protective effect
 
 plot_protective_effect <- function(protective_effect, key_intervention_time,
                                    sim_length, trial_title) {
+  
+  # Requirements
+  
   year <- 365
   
   require(ggplot2)
+  require(ggh4x)
   require(rcartocolor)
   
-  # So that facets come somehow ordered...
+  # Cleaning
+
+  protective_effect <- tidy_plot_labels(protective_effect)
   
-  protective_effect <- protective_effect %>%
-    mutate(
-      effect_order = case_when(
-        (grepl("Prevalence", measure) & grepl("True", type_measure)) ~ 1,
-        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2,
-        (grepl("Incidence", measure) & grepl("True", type_measure)) ~ 3,
-        (grepl("Incidence", measure) & grepl("ACD", type_measure)) ~ 4,
-        (grepl("Hazard Ratio", measure) & grepl("True", type_measure)) ~ 5,
-        (grepl("Hazard Ratio", measure) & grepl("ACD", type_measure)) ~ 6,
-        TRUE ~ 7
-      ),
-      type_measure = forcats::fct_reorder(type_measure, effect_order, .fun = min),
-      measure = forcats::fct_reorder(measure, effect_order, .fun = min)
-    )
-  
-  # Actual plot - general for effect sizes
-  
+  # Plot (simple, overall effect)
+
   ggplot(data = protective_effect,
          aes(x = timestep, y = mean)) +
     geom_ribbon(data = filter(protective_effect, grepl("Ins", type_measure)),
@@ -65,22 +258,23 @@ plot_protective_effect <- function(protective_effect, key_intervention_time,
     geom_errorbar(data = filter(protective_effect, !grepl("Ins", type_measure)),
               aes(ymin = lower_95quant, ymax = upper_95quant), width = 0.2) +
     geom_point() + geom_line() +
-    geom_vline(xintercept = key_intervention_time*year, color = "firebrick", linetype = "dashed") +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                       labels = (0:sim_length)) +
+    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
+    scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
     scale_y_continuous(labels = scales::percent, limits = 0:1) +
-    labs(x = "Year", y = "Intervention Protective Effect",
-         title = trial_title) +
+    labs(x = "Year", y = "Effect size",
+         title = paste0(trial_title, ": Intervention Protective Effect")) +
     theme_bw() +
     theme(legend.position = "bottom", legend.title = element_blank()) +
-    facet_nested(type_measure + measure ~ ., scales = "free")
+    ggh4x::facet_grid2(type_measure + measure ~ ., scales = "free_y", independent = "y")
 }
-
 
 # EFFECT BY COHORT
 # Effect sizes for all populations overlaid; colour = population.
 
+
 plot_effect_by_cohort <- function(effects_df, key_intervention_time, sim_length, trial_title) {
+  
+  # Requirements
   
   year <- 365
   
@@ -89,50 +283,25 @@ plot_effect_by_cohort <- function(effects_df, key_intervention_time, sim_length,
   require(dplyr)
   require(rcartocolor)
   
-  # Get the number of populations and assign colours to each population
-  
-  n_pops <- length(unique(effects_df$analysis_population))
-  pop_colors <- carto_pal(name = "Safe")[seq_len(n_pops)]
-  
-  # Facets ordered and legible legend
-  
-  effects_df <- effects_df %>%
+  # Cleaning
+
+  df <- effects_df %>%
     filter(!is.na(mean)) %>%
-    mutate(
-      effect_order = case_when(
-        (grepl("Prevalence", measure) & grepl("True", type_measure)) ~ 1,
-        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2,
-        (grepl("Incidence", measure) & grepl("True", type_measure)) ~ 3,
-        (grepl("Incidence", measure) & grepl("ACD", type_measure)) ~ 4,
-        (grepl("Hazard Ratio", measure) & grepl("True", type_measure)) ~ 5,
-        (grepl("Hazard Ratio", measure) & grepl("ACD", type_measure)) ~ 6,
-        TRUE ~ 7
-      ),
-      type_measure = forcats::fct_reorder(type_measure, effect_order, .fun = min),
-      measure = forcats::fct_reorder(measure, effect_order, .fun = min)
-    ) %>%
-    mutate(
-      analysis_population_order = case_when(
-        grepl("all", analysis_population) ~ 1,
-        grepl("0_5", analysis_population) ~ 2,
-        grepl("5_15", analysis_population) ~ 3,
-        grepl("15_plus", analysis_population) ~ 4,
-        TRUE ~ 5
-      ),
-      analysis_population = forcats::fct_reorder(analysis_population, analysis_population_order, .fun = min),
-      analysis_population = gsub("all_", "All ", analysis_population),
-      analysis_population = gsub("age_", "Ages  ", analysis_population),
-      analysis_population = gsub("_", "-", analysis_population)
-    )
+    tidy_plot_labels()
+
+  # Get the number of populations and assign colours to each population
+
+  n_pops     <- length(unique(df$analysis_population))
+  pop_colors <- carto_pal(name = "Safe")[seq_len(n_pops)]
+
+  # Plot
   
-  # Plot itself
-  
-  ggplot(effects_df, aes(x = timestep, y = mean,
-                         color = analysis_population, fill = analysis_population,
-                         group = analysis_population)) +
-    geom_ribbon(data = filter(effects_df, grepl("Ins", type_measure)),
+  ggplot(df, aes(x = timestep, y = mean,
+                 color = analysis_population, fill = analysis_population,
+                 group = analysis_population)) +
+    geom_ribbon(data = filter(df, grepl("Ins", type_measure)),
                 aes(ymin = lower_95quant, ymax = upper_95quant), alpha = 0.2, color = NA) +
-    geom_errorbar(data = filter(effects_df, !grepl("Ins", type_measure)),
+    geom_errorbar(data = filter(df, !grepl("Ins", type_measure)),
                   aes(ymin = lower_95quant, ymax = upper_95quant),
                   width = 0.2, position = position_dodge(width = 50)) +
     geom_point(position = position_dodge(width = 50)) +
@@ -142,17 +311,20 @@ plot_effect_by_cohort <- function(effects_df, key_intervention_time, sim_length,
     scale_fill_manual(values = pop_colors) +
     scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
     scale_y_continuous(labels = scales::percent, limits = 0:1) +
-    labs(x = "Year", y = "Protective Effect",
-         title = paste0(trial_title, ": Effect size by age cohort"),
+    labs(x = "Year", y = "Effect size",
+         title = paste0(trial_title, ": Intervention Protective Effect by age cohort"),
          color = "Population", fill = "Population") +
     theme_bw() +
     theme(legend.position = "bottom") +
-    facet_nested(type_measure + measure ~ ., scales = "free")
+    ggh4x::facet_grid2(type_measure + measure ~ ., scales = "free_y", independent = "y")
 }
 
-# Get general functions for protective effect and time-to-event
+# TIME-TO-EVENT
+# Kaplan Meier curves
 
 plot_time_to_event_pair <- function(tte_df, sim_length, trial_title, x_label) {
+  
+  # Requirements
   
   require(dplyr)
   require(ggplot2)
@@ -162,399 +334,125 @@ plot_time_to_event_pair <- function(tte_df, sim_length, trial_title, x_label) {
   require(tidycmprsk)
 
   year <- 365
+  
+  # Run survival model and plot the K-M curve
 
   surv_fit_infection <- survfit(Surv(time_to_infection, ever_infected) ~ run, data = tte_df) %>%
-    tidy() %>%
-    mutate(strata = gsub("run=", "", strata))
+    tidy() %>% mutate(strata = gsub("run=", "", strata))
 
   surv_fit_case <- survfit(Surv(time_to_case, ever_case) ~ run, data = tte_df) %>%
-    tidy() %>%
-    mutate(strata = gsub("run=", "", strata))
+    tidy() %>% mutate(strata = gsub("run=", "", strata))
 
-  p_infection <- ggplot(data = surv_fit_infection,
-                        aes(x = time, y = estimate, color = strata, fill = strata)) +
-    geom_line(linewidth = 1) +
-    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.3) +
-    geom_point(data = surv_fit_infection[surv_fit_infection$n.censor != 0,],
-               aes(x = time, y = estimate, color = strata, fill = strata),
-               shape = 4, size = 4) +
-    scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                       labels = 0:sim_length) +
-    scale_y_continuous(labels = scales::percent) +
-    labs(x = x_label, y = "Proportion without infection") +
-    theme_bw() +
-    theme(legend.position = "bottom", legend.title = element_blank())
+  make_km_plot <- function(surv_fit, y_label) {
+    ggplot(surv_fit, aes(x = time, y = estimate, color = strata, fill = strata)) +
+      geom_line(linewidth = 1) +
+      geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.3) +
+      geom_point(data = filter(surv_fit, n.censor != 0),
+                 shape = 4, size = 4) +
+      scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
+      scale_fill_manual(values  = carto_pal(name = "Safe")[c(11, 10)]) +
+      scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
+      scale_y_continuous(labels = scales::percent) +
+      labs(x = x_label, y = y_label) +
+      theme_bw() +
+      theme(legend.position = "bottom", legend.title = element_blank())
+  }
 
-  p_case <- ggplot(data = surv_fit_case,
-                   aes(x = time, y = estimate, color = strata, fill = strata)) +
-    geom_line(linewidth = 1) +
-    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.3) +
-    geom_point(data = surv_fit_case[surv_fit_case$n.censor != 0,],
-               aes(x = time, y = estimate, color = strata, fill = strata),
-               shape = 4, size = 4) +
-    scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_fill_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year),
-                       labels = 0:sim_length) +
-    scale_y_continuous(labels = scales::percent) +
-    labs(x = x_label, y = "Proportion without clinical case") +
-    theme_bw() +
-    theme(legend.position = "bottom", legend.title = element_blank())
-
-  annotate_figure(ggarrange(p_infection, p_case, nrow = 2), top = trial_title)
+  annotate_figure(
+    ggarrange(
+      make_km_plot(surv_fit_infection, "Proportion without infection"),
+      make_km_plot(surv_fit_case,      "Proportion without clinical case"),
+      nrow = 2
+    ),
+    top = trial_title
+  )
 }
 
-
-
-# ACROSS POP-CLUSTER ------------------------------------------------------
-
-
-# CLUSTER VARIABILITY
-# Spaghetti of sim-averaged prevalence per cluster (thin) + overall mean (bold), by arm.
-
-plot_cluster_variability <- function(estimates_df, key_intervention_time, sim_length, trial_title,
-                                     measures_to_show = c("Infection Prevalence", "Case Incidence p.p.day"),
-                                     type_to_show = c("True Instantaneous")) {
-  year <- 365
-  
-  require(ggplot2)
-  require(dplyr)
-  require(rcartocolor)
-
-  # Facets ordered and legible legend
-  
-  df <- estimates_df %>%
-    filter(!is.na(mean),
-           as.character(measure) %in% measures_to_show,
-           type_measure %in% type_to_show) %>%
-    mutate(
-      effect_order = case_when(
-        (grepl("Prevalence", measure) & grepl("True", type_measure)) ~ 1,
-        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2,
-        (grepl("Incidence", measure) & grepl("True", type_measure)) ~ 3,
-        (grepl("Incidence", measure) & grepl("ACD", type_measure)) ~ 4,
-        (grepl("Hazard Ratio", measure) & grepl("True", type_measure)) ~ 5,
-        (grepl("Hazard Ratio", measure) & grepl("ACD", type_measure)) ~ 6,
-        TRUE ~ 7
-      ),
-      type_measure = forcats::fct_reorder(type_measure, effect_order, .fun = min),
-      measure = forcats::fct_reorder(measure, effect_order, .fun = min)
-    ) %>%
-    mutate(
-      analysis_population_order = case_when(
-        grepl("all", analysis_population) ~ 1,
-        grepl("0_5", analysis_population) ~ 2,
-        grepl("5_15", analysis_population) ~ 3,
-        grepl("15_plus", analysis_population) ~ 4,
-        TRUE ~ 5
-      ),
-      analysis_population = forcats::fct_reorder(analysis_population, analysis_population_order, .fun = min),
-      analysis_population = gsub("all_", "All ", analysis_population),
-      analysis_population = gsub("age_", "Ages  ", analysis_population),
-      analysis_population = gsub("_", "-", analysis_population)
-    )
-
-  df_mean <- df %>%
-    group_by(run, timestep, measure, type_measure, analysis_population) %>%
-    summarise(mean = mean(mean, na.rm = TRUE), .groups = "drop")
-
-  ggplot(df, aes(x = timestep, y = mean,
-                 group = interaction(cluster_id, run), color = run)) +
-    geom_line(alpha = 0.3, linewidth = 0.4) +
-    geom_line(data = df_mean, aes(group = run), linewidth = 1.1) +
-    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
-    scale_color_manual(values = carto_pal(name = "Safe")[c(11, 10)]) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
-    scale_y_continuous(labels = scales::percent) +
-    labs(x = "Year", y = "Estimate",
-         title = paste0(trial_title, ": Cluster variability across true instantaneous measures")) +
-    theme_bw() +
-    theme(legend.position = "bottom", legend.title = element_blank()) +
-    facet_grid(analysis_population ~ measure, scales = "free_y")
-}
-
-# COHORT COMPARISON
-# All analysis populations on one plot; colour = population, linetype = arm.
-
-plot_cohort_comparison_prev <- function(estimates_summary, key_intervention_time, sim_length, trial_title,
-                                   measures_to_show = c("Infection Prevalence", "Case Prevalence")) {
-  year <- 365
-  
-  require(ggplot2)
-  require(dplyr)
-  require(ggh4x)
-  require(rcartocolor)
-
-  # Get the number of populations and assign colours to each population
-  
-  n_pops <- length(unique(estimates_summary$analysis_population))
-  pop_colors <- carto_pal(name = "Safe")[seq_len(n_pops)]
-  
-  # Facets ordered and legible legend
-  
-  df <- estimates_summary %>%
-    filter(
-      !is.na(mean),
-      measure %in% measures_to_show,
-      (type_measure == "True Instantaneous")) %>%
-    mutate(
-      effect_order = case_when(
-        (grepl("Prevalence", measure) & grepl("True", type_measure)) ~ 1,
-        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2,
-        (grepl("Incidence", measure) & grepl("True", type_measure)) ~ 3,
-        (grepl("Incidence", measure) & grepl("ACD", type_measure)) ~ 4,
-        (grepl("Hazard Ratio", measure) & grepl("True", type_measure)) ~ 5,
-        (grepl("Hazard Ratio", measure) & grepl("ACD", type_measure)) ~ 6,
-        TRUE ~ 7
-      ),
-      type_measure = forcats::fct_reorder(type_measure, effect_order, .fun = min),
-      measure = forcats::fct_reorder(measure, effect_order, .fun = min)
-    ) %>%
-    mutate(
-      analysis_population_order = case_when(
-        grepl("all", analysis_population) ~ 1,
-        grepl("0_5", analysis_population) ~ 2,
-        grepl("5_15", analysis_population) ~ 3,
-        grepl("15_plus", analysis_population) ~ 4,
-        TRUE ~ 5
-      ),
-      analysis_population = forcats::fct_reorder(analysis_population, analysis_population_order, .fun = min),
-      analysis_population = gsub("all_", "All ", analysis_population),
-      analysis_population = gsub("age_", "Ages  ", analysis_population),
-      analysis_population = gsub("_", "-", analysis_population)
-    )
-  
-  # Plot itself
-  
-  ggplot(df, aes(x = timestep, y = mean,
-                 color = analysis_population, fill = analysis_population,
-                 linetype = run,
-                 group = interaction(analysis_population, run))) +
-    geom_ribbon(aes(ymin = lower_95quant, ymax = upper_95quant), alpha = 0.15, color = NA) +
-    geom_line() +
-    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
-    scale_color_manual(values = pop_colors) +
-    scale_fill_manual(values = pop_colors) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
-    scale_y_continuous(labels = scales::percent) +
-    labs(x = "Year", y = NULL,
-         title = paste0(trial_title, ": True instantaneous estimates by age cohort"),
-         color = "Population", fill = "Population", linetype = "Arm") +
-    theme_bw() +
-    theme(legend.position = "bottom") +
-    facet_nested(type_measure + measure ~ ., scales = "free_y")
-}
-
-plot_cohort_comparison_true_inc <- function(estimates_summary, key_intervention_time, sim_length, trial_title,
-                                        measures_to_show = c("Incidence")) {
-  year <- 365
-  
-  require(ggplot2)
-  require(dplyr)
-  require(ggh4x)
-  require(rcartocolor)
-  
-  # Get the number of populations and assign colours to each population
-  
-  n_pops <- length(unique(estimates_summary$analysis_population))
-  pop_colors <- carto_pal(name = "Safe")[seq_len(n_pops)]
-  
-  # Facets ordered and legible legend
-  
-  df <- estimates_summary %>%
-    filter(
-      !is.na(mean),
-      grepl(measures_to_show, measure),
-      grepl("True, ag", type_measure),
-      grepl("p.p.y", measure)) %>%
-    mutate(
-      effect_order = case_when(
-        (grepl("Prevalence", measure) & grepl("True", type_measure)) ~ 1,
-        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2,
-        (grepl("Incidence", measure) & grepl("True", type_measure)) ~ 3,
-        (grepl("Incidence", measure) & grepl("ACD", type_measure)) ~ 4,
-        (grepl("Hazard Ratio", measure) & grepl("True", type_measure)) ~ 5,
-        (grepl("Hazard Ratio", measure) & grepl("ACD", type_measure)) ~ 6,
-        TRUE ~ 7
-      ),
-      type_measure = forcats::fct_reorder(type_measure, effect_order, .fun = min),
-      measure = forcats::fct_reorder(measure, effect_order, .fun = min)
-    ) %>%
-    mutate(
-      analysis_population_order = case_when(
-        grepl("all", analysis_population) ~ 1,
-        grepl("0_5", analysis_population) ~ 2,
-        grepl("5_15", analysis_population) ~ 3,
-        grepl("15_plus", analysis_population) ~ 4,
-        TRUE ~ 5
-      ),
-      analysis_population = forcats::fct_reorder(analysis_population, analysis_population_order, .fun = min),
-      analysis_population = gsub("all_", "All ", analysis_population),
-      analysis_population = gsub("age_", "Ages  ", analysis_population),
-      analysis_population = gsub("_", "-", analysis_population)
-    )
-  
-  # Plot itself
-  
-  ggplot(df, aes(x = timestep, y = mean,
-                 color = analysis_population, fill = analysis_population,
-                 linetype = run,
-                 group = interaction(analysis_population, run))) +
-    geom_errorbar(aes(ymin = lower_95quant, ymax = upper_95quant),
-                  width = 0.2, position = position_dodge(width = 50)) +
-    geom_point(position = position_dodge(width = 50)) +
-    geom_line() +
-    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
-    scale_color_manual(values = pop_colors) +
-    scale_fill_manual(values = pop_colors) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
-    scale_y_continuous(labels = scales::percent) +
-    labs(x = "Year", y = NULL,
-         title = paste0(trial_title, ": True aggregate estimates by age cohort"),
-         color = "Population", fill = "Population", linetype = "Arm") +
-    theme_bw() +
-    theme(legend.position = "bottom") +
-    facet_nested(type_measure + measure ~ ., scales = "free_y")
-}
-
-plot_cohort_comparison_acd_inc <- function(estimates_summary, key_intervention_time, sim_length, trial_title,
-                                           measures_to_show = c("Incidence")) {
-  year <- 365
-  
-  require(ggplot2)
-  require(dplyr)
-  require(ggh4x)
-  require(rcartocolor)
-  
-  # Get the number of populations and assign colours to each population
-  
-  n_pops <- length(unique(estimates_summary$analysis_population))
-  pop_colors <- carto_pal(name = "Safe")[seq_len(n_pops)]
-  
-  # Facets ordered and legible legend
-  
-  df <- estimates_summary %>%
-    filter(
-      !is.na(mean),
-      grepl(measures_to_show, measure),
-      grepl("ACD", type_measure),
-      grepl("p.p.y", measure)) %>%
-    mutate(
-      effect_order = case_when(
-        (grepl("Prevalence", measure) & grepl("True", type_measure)) ~ 1,
-        (grepl("Prevalence", measure) & grepl("Survey", type_measure)) ~ 2,
-        (grepl("Incidence", measure) & grepl("True", type_measure)) ~ 3,
-        (grepl("Incidence", measure) & grepl("ACD", type_measure)) ~ 4,
-        (grepl("Hazard Ratio", measure) & grepl("True", type_measure)) ~ 5,
-        (grepl("Hazard Ratio", measure) & grepl("ACD", type_measure)) ~ 6,
-        TRUE ~ 7
-      ),
-      type_measure = forcats::fct_reorder(type_measure, effect_order, .fun = min),
-      measure = forcats::fct_reorder(measure, effect_order, .fun = min)
-    ) %>%
-    mutate(
-      analysis_population_order = case_when(
-        grepl("all", analysis_population) ~ 1,
-        grepl("0_5", analysis_population) ~ 2,
-        grepl("5_15", analysis_population) ~ 3,
-        grepl("15_plus", analysis_population) ~ 4,
-        TRUE ~ 5
-      ),
-      analysis_population = forcats::fct_reorder(analysis_population, analysis_population_order, .fun = min),
-      analysis_population = gsub("all_", "All ", analysis_population),
-      analysis_population = gsub("age_", "Ages  ", analysis_population),
-      analysis_population = gsub("_", "-", analysis_population)
-    )
-  
-  # Plot itself
-  
-  ggplot(df, aes(x = timestep, y = mean,
-                 color = analysis_population, fill = analysis_population,
-                 linetype = run,
-                 group = interaction(analysis_population, run))) +
-    geom_errorbar(aes(ymin = lower_95quant, ymax = upper_95quant),
-                  width = 0.2, position = position_dodge(width = 50)) +
-    geom_point(position = position_dodge(width = 50)) +
-    geom_line() +
-    geom_vline(xintercept = key_intervention_time * year, color = "firebrick", linetype = "dashed") +
-    scale_color_manual(values = pop_colors) +
-    scale_fill_manual(values = pop_colors) +
-    scale_x_continuous(breaks = seq(0, sim_length * year, by = year), labels = 0:sim_length) +
-    scale_y_continuous(labels = scales::percent) +
-    labs(x = "Year", y = NULL,
-         title = paste0(trial_title, ": ACD estimates by age cohort"),
-         color = "Population", fill = "Population", linetype = "Arm") +
-    theme_bw() +
-    theme(legend.position = "bottom") +
-    facet_nested(type_measure + measure ~ ., scales = "free_y")
-}
 
 
 # WRAPPER -----------------------------------------------------------------
 
 
-# A wrapper to save all the basic plots for a two-arm trial analysis,
-# given the outputs of the trial analyses and the survey/ACD protocol used.
-
 save_two_arm_trial_plots <- function(trial_results, trial_slug,
                                      key_intervention_time, sim_length,
                                      trial_title) {
-  # General options
+  
+  # Requirements
   
   require(dplyr)
   require(ggplot2)
   require(ggh4x)
   require(rcartocolor)
 
-  # Make sure we have out outputs dirs in place
-  
   source("functions/trial_tidy_outputs.R")
   make_output_dirs()
 
   year <- 365
-  
-  
-  ## Cross-population plots
-  
-  # Cluster variability per population
+
+
+  ## Cross-population: cluster variability
+
   save_plot(
     plot_cluster_variability(
-      estimates_df = trial_results$estimates_true,
+      estimates_df        = trial_results$estimates_true,
       key_intervention_time = key_intervention_time,
-      sim_length = sim_length,
-      trial_title = trial_title,
+      sim_length          = sim_length,
+      trial_title         = trial_title
     ),
     paste0("outputs/plots/prevalence_incidence/", trial_slug, "_cluster_variability.png"),
-    height = 5
+    height = 6
   )
-  
-  # All populations on one plot
+
+
+  ## Cross-population: cohort comparisons (three separate plots)
+
   save_plot(
-    plot_cohort_comparison_prev(
-      estimates_summary = trial_results$estimates_summary,
+    plot_cohort_comparison_true_prev(
+      estimates_summary     = trial_results$estimates_summary,
       key_intervention_time = key_intervention_time,
-      sim_length = sim_length,
-      trial_title = trial_title
-    )
-    plot_cohort_comparison_true_inc(
-      estimates_summary = trial_results$estimates_summary,
-      key_intervention_time = key_intervention_time,
-      sim_length = sim_length,
-      trial_title = trial_title
-    )
-    plot_cohort_comparison_acd_inc(
-      estimates_summary = trial_results$estimates_summary,
-      key_intervention_time = key_intervention_time,
-      sim_length = sim_length,
-      trial_title = trial_title
+      sim_length            = sim_length,
+      trial_title           = trial_title
     ),
-    paste0("outputs/plots/prevalence_incidence/", trial_slug, "_cohort_comparison.png"),
+    paste0("outputs/plots/prevalence_incidence/", trial_slug, "_cohort_comparison_true_prev.png"),
     height = 6
   )
   
-  # Effect sizes across populations
+  save_plot(
+    plot_cohort_comparison_survey_prev(
+      estimates_summary     = trial_results$estimates_summary,
+      key_intervention_time = key_intervention_time,
+      sim_length            = sim_length,
+      trial_title           = trial_title
+    ),
+    paste0("outputs/plots/prevalence_incidence/", trial_slug, "_cohort_comparison_survey_prev.png"),
+    height = 6
+  )
+
+  save_plot(
+    plot_cohort_comparison_true_inc(
+      estimates_summary     = trial_results$estimates_summary,
+      key_intervention_time = key_intervention_time,
+      sim_length            = sim_length,
+      trial_title           = trial_title
+    ),
+    paste0("outputs/plots/prevalence_incidence/", trial_slug, "_cohort_comparison_true_inc.png"),
+    height = 6
+  )
+
+  save_plot(
+    plot_cohort_comparison_acd_inc(
+      estimates_summary     = trial_results$estimates_summary,
+      key_intervention_time = key_intervention_time,
+      sim_length            = sim_length,
+      trial_title           = trial_title
+    ),
+    paste0("outputs/plots/prevalence_incidence/", trial_slug, "_cohort_comparison_acd_inc.png"),
+    height = 6
+  )
+
+
+  ## Effect sizes across populations
+
   save_plot(
     plot_effect_by_cohort(
       effects_df = trial_results$all_effects %>%
@@ -563,40 +461,40 @@ save_two_arm_trial_plots <- function(trial_results, trial_slug,
           !(type_measure == "True Instantaneous" & grepl("Incidence", measure)),
           grepl("Infection Prev", measure) |
             grepl("Case Incidence p.p.y", measure) |
-            (grepl("ime-to", type_measure) & grepl("Case", measure))
+            (grepl("ime-to", type_measure) & grepl("Hazard", measure))
         ),
       key_intervention_time = key_intervention_time,
-      sim_length = sim_length,
-      trial_title = trial_title
+      sim_length            = sim_length,
+      trial_title           = trial_title
     ),
     paste0("outputs/plots/effect_size/", trial_slug, "_effect_by_cohort.png"),
     height = 10
   )
-  
-  
-  ## Kaplan Maier curves (one file per analysis population)
+
+
+  ## Kaplan-Meier curves (one file per analysis population)
 
   tte_configs <- list(
-    list(data = "tte_true_1",  label = "True time-to-event",        x = "Year after trial start",        suffix = "_true_1_intervention"),
-    list(data = "tte_true_2",  label = "True time-to-event",        x = "Year after second intervention", suffix = "_true_2_intervention"),
-    list(data = "tte_acd_1",   label = "Time-to-event w/ ACD visits", x = "Year after trial start",       suffix = "_acd_1_intervention"),
-    list(data = "tte_acd_2",   label = "Time-to-event w/ ACD visits", x = "Year after second intervention", suffix = "_acd_2_intervention")
+    list(key = "tte_true_1", label = "True time-to-event",          x = "Year after trial start",         suffix = "_true_1_intervention"),
+    list(key = "tte_true_2", label = "True time-to-event",          x = "Year after second intervention",  suffix = "_true_2_intervention"),
+    list(key = "tte_acd_1",  label = "Time-to-event w/ ACD visits", x = "Year after trial start",         suffix = "_acd_1_intervention"),
+    list(key = "tte_acd_2",  label = "Time-to-event w/ ACD visits", x = "Year after second intervention",  suffix = "_acd_2_intervention")
   )
 
   for (cfg in tte_configs) {
-    tte_df <- trial_results[[cfg$data]]
+    tte_df <- trial_results[[cfg$key]]
+    if (is.null(tte_df)) next
     for (ap in unique(tte_df$analysis_population)) {
       save_plot(
         plot_time_to_event_pair(
-          tte_df = filter(tte_df, analysis_population == ap),
-          sim_length = sim_length,
+          tte_df      = filter(tte_df, analysis_population == ap),
+          sim_length  = sim_length,
           trial_title = paste0(trial_title, " [", ap, "]: ", cfg$label),
-          x_label = cfg$x
+          x_label     = cfg$x
         ),
         paste0("outputs/plots/time_to_event/", trial_slug, cfg$suffix, "_", ap, ".png"),
         width = 8, height = 8
       )
     }
   }
-
 }
