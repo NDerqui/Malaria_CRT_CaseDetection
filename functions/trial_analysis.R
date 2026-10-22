@@ -14,7 +14,9 @@ analyse_two_arm_trial <- function(trial_id,
                                   trial_start, trial_second_intervention,
                                   sim_length,
                                   # Protocols for PCD and ACD
-                                  survey_protocol, acd_protocol) {
+                                  survey_protocol, acd_protocol,
+                                  # Hazard ratio window (in years; mirrors aggregate incidence periods)
+                                  window_years_hr = 1) {
   
   year <- 365
   require(rlang)
@@ -173,28 +175,24 @@ analyse_two_arm_trial <- function(trial_id,
       prepare_time_to_event_survival(time_inter = t2, sim_length = sim_length*year)
   } else NULL
 
-  # Put all estimates together and calculate hazard ratios (case and infection).
-  # Once we have all HR for all sim, estimate summaries across sims.
+  # Windowed (landmark) hazard ratios: one per year window from trial start.
+  # Uses tte_true_1 / tte_acd_1 (full follow-up from first intervention).
+  # window_years_hr controls window size, default 1 year (mirrors aggregate incidence).
 
-  t_end_1 <- if (has_second_intervention) (trial_start + trial_second_intervention)*year else sim_length*year
-
-  hr_parts <- list(
-    estimate_hazard_ratio_by_sim(tte_true_1, "time_to_case",     "ever_case")     %>% mutate(type_measure = "True Time-to-event",          measure = "Case Hazard Ratio",      timestep = t_end_1),
-    estimate_hazard_ratio_by_sim(tte_true_1, "time_to_infection", "ever_infected") %>% mutate(type_measure = "True Time-to-event",          measure = "Infection Hazard Ratio", timestep = t_end_1),
-    estimate_hazard_ratio_by_sim(tte_acd_1,  "time_to_case",     "ever_case")     %>% mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Case Hazard Ratio",      timestep = t_end_1),
-    estimate_hazard_ratio_by_sim(tte_acd_1,  "time_to_infection", "ever_infected") %>% mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Infection Hazard Ratio", timestep = t_end_1)
-  )
-
-  if (has_second_intervention) {
-    hr_parts <- c(hr_parts, list(
-      estimate_hazard_ratio_by_sim(tte_true_2, "time_to_case",     "ever_case")     %>% mutate(type_measure = "True Time-to-event",          measure = "Case Hazard Ratio",      timestep = sim_length*year),
-      estimate_hazard_ratio_by_sim(tte_true_2, "time_to_infection", "ever_infected") %>% mutate(type_measure = "True Time-to-event",          measure = "Infection Hazard Ratio", timestep = sim_length*year),
-      estimate_hazard_ratio_by_sim(tte_acd_2,  "time_to_case",     "ever_case")     %>% mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Case Hazard Ratio",      timestep = sim_length*year),
-      estimate_hazard_ratio_by_sim(tte_acd_2,  "time_to_infection", "ever_infected") %>% mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Infection Hazard Ratio", timestep = sim_length*year)
-    ))
-  }
-
-  hazard_ratio <- bind_rows(hr_parts) %>%
+  hazard_ratio <- bind_rows(
+    estimate_hazard_ratio_by_sim_windowed(tte_true_1, "time_to_case",      "ever_case",
+      time_inter = trial_start*year, sim_length = sim_length*year, window_years = window_years_hr) %>%
+      mutate(type_measure = "True Time-to-event",          measure = "Case Hazard Ratio"),
+    estimate_hazard_ratio_by_sim_windowed(tte_true_1, "time_to_infection", "ever_infected",
+      time_inter = trial_start*year, sim_length = sim_length*year, window_years = window_years_hr) %>%
+      mutate(type_measure = "True Time-to-event",          measure = "Infection Hazard Ratio"),
+    estimate_hazard_ratio_by_sim_windowed(tte_acd_1,  "time_to_case",      "ever_case",
+      time_inter = trial_start*year, sim_length = sim_length*year, window_years = window_years_hr) %>%
+      mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Case Hazard Ratio"),
+    estimate_hazard_ratio_by_sim_windowed(tte_acd_1,  "time_to_infection", "ever_infected",
+      time_inter = trial_start*year, sim_length = sim_length*year, window_years = window_years_hr) %>%
+      mutate(type_measure = "Time-to-event w/ ACD visits", measure = "Infection Hazard Ratio")
+  ) %>%
     mutate(effect = 1 - hazard_ratio) %>%
     group_by(across(c("analysis_population", "type_measure", "measure", "timestep"))) %>%
     mutate(mean = mean(effect, na.rm = TRUE),

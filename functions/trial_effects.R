@@ -139,7 +139,7 @@ estimate_hazard_ratio_by_sim <- function(df,
                                          arm_col = "run", control = "Control",
                                          covariates = NULL) {
   require(dplyr)
-  
+
   result <- df %>%
     group_by(analysis_population, sim) %>%
     group_modify(~ estimate_hazard_ratio(
@@ -147,6 +147,51 @@ estimate_hazard_ratio_by_sim <- function(df,
       arm_col = arm_col, control = control, covariates = covariates
     )) %>%
     ungroup()
-  
+
   return(result)
+}
+
+# Windowed (landmark) version: runs HR per time window rather than over the full follow-up.
+# For each window [t_start, t_end]:
+#   - keeps only individuals who had not yet experienced the event before t_start
+#   - measures time from window start (0) to event or censoring at window end
+# Default window_years = 1 mirrors estimate_true_aggregate_incidence() periods.
+
+estimate_hazard_ratio_by_sim_windowed <- function(df,
+                                                   time_col, event_col,
+                                                   time_inter, sim_length,
+                                                   window_years = 1,
+                                                   year_length = 365,
+                                                   arm_col = "run", control = "Control",
+                                                   covariates = NULL) {
+  require(dplyr)
+  
+  # Get the different periods to run the hazard ratio over, based on the window size and total simulation length
+
+  window  <- window_years * year_length
+  t_ends  <- seq(time_inter + window, sim_length, by = window)
+  
+  # Calculate HR for each window and bind together into one dfs
+
+  bind_rows(lapply(t_ends, function(t_end) {
+    t_start <- t_end - window
+
+    df %>%
+      filter(.data[[time_col]] > t_start | !.data[[event_col]]) %>%
+      mutate(
+        .time_w  = pmin(.data[[time_col]], t_end) - t_start,
+        .event_w = .data[[event_col]] & .data[[time_col]] > t_start & .data[[time_col]] <= t_end
+      ) %>%
+      group_by(analysis_population, sim) %>%
+      group_modify(~ tryCatch(
+        estimate_hazard_ratio(.x, ".time_w", ".event_w",
+                              arm_col = arm_col, control = control, covariates = covariates),
+        error = function(e) data.frame(
+          hazard_ratio = NA_real_, conf_low = NA_real_, conf_high = NA_real_,
+          p_value = NA_real_, significant_any = NA, significant_benefit = NA
+        )
+      )) %>%
+      ungroup() %>%
+      mutate(timestep = t_end)
+  }))
 }
