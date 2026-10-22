@@ -11,6 +11,36 @@
 # case prevalence at each timestep (case at timestep/population),
 # case incidence at each timestep (newly clinical case at timestep/population at risk).
 
+
+# HELPER: first-detection censoring ----------------------------------------
+
+# Marks rows occurring AFTER an individual's first positive detection event.
+# Apply AFTER subsetting to relevant timesteps (visit times for ACD, all times for true).
+# Requires the df to already be arranged by (id_cols, timestep).
+# To extend to a time-limited censoring window, replace `timestep > .first_t`
+# with `timestep > .first_t & timestep <= .first_t + window_days`.
+
+.flag_post_detection <- function(df, detection_col = "new_infection_at_time",
+                                  id_cols = c("analysis_population", "sim",
+                                              "cluster_id", "individual_index")) {
+  df %>%
+    group_by(across(all_of(id_cols))) %>%
+    mutate(
+      .first_t  = suppressWarnings(min(timestep[.data[[detection_col]] > 0], na.rm = TRUE)),
+      .censored = is.finite(.first_t) & timestep > .first_t
+    ) %>%
+    ungroup()
+}
+
+.apply_detection_censoring <- function(df, detection_col = "new_infection_at_time",
+                                        id_cols = c("analysis_population", "sim",
+                                                    "cluster_id", "individual_index")) {
+  df %>%
+    .flag_post_detection(detection_col = detection_col, id_cols = id_cols) %>%
+    filter(!.censored) %>%
+    select(-.censored, -.first_t)
+}
+
 estimate_true_realtime_outcomes <- function(df) {
   
   require(dplyr)
@@ -116,8 +146,9 @@ estimate_true_realtime_outcomes_by_age <- function(df) {
 # 6 months or 1 year, instead of estimating incidence at each timestep.
 
 estimate_true_aggregate_incidence <- function(df, sim_start = 0,
-                                       followup_period_year = 1,
-                                       followup_end = max(df$timestep, na.rm = TRUE)) {
+                                              followup_period_year = 1,
+                                              followup_end = max(df$timestep, na.rm = TRUE),
+                                              censor_after_detection = TRUE) {
   
   require(dplyr)
   year <- 365
@@ -151,12 +182,12 @@ estimate_true_aggregate_incidence <- function(df, sim_start = 0,
         number_periods # pmin so that last timestep doesn't get assigned to other period out of a bad denominator
       )
     ) %>% merge(periods)
-  
+
   # Prepare data once before grouped calcs
   # then get aggregated incidence for each period
-  
+
   grouping_vars <- c("analysis_population", "cluster_id", "period", "sim")
-  
+
   result <- df %>%
     # To ensure timings of transitions come okay...
     arrange(analysis_population, sim, cluster_id, individual_index, timestep) %>%
@@ -166,6 +197,8 @@ estimate_true_aggregate_incidence <- function(df, sim_start = 0,
     group_by(analysis_population, sim, cluster_id, individual_index) %>%
     mutate(prev_state = lag(state)) %>%
     ungroup() %>%
+    ## Censor each individual after their first detected infection (optional)
+    { if (censor_after_detection) .apply_detection_censoring(.) else . } %>%
     ## Ready for the each period calcs
     # Filter to each timestep and remove everyone dead by then (for denom)
     group_by(across(all_of(grouping_vars))) %>%
@@ -243,9 +276,10 @@ estimate_survey_prevalence <- function(df, cross_surveys_in_years, trial_start) 
 }
 
 estimate_acd_incidence <- function(df, trial_start,
-                             routine_visits_in_weeks, days_catchment,
-                             followup_period_year = 1,
-                             followup_end = max(df$timestep, na.rm = TRUE)) {
+                                   routine_visits_in_weeks, days_catchment,
+                                   followup_period_year = 1,
+                                   followup_end = max(df$timestep, na.rm = TRUE),
+                                   censor_after_detection = TRUE) {
   
   require(dplyr)
   year <- 365
@@ -283,7 +317,13 @@ estimate_acd_incidence <- function(df, trial_start,
   df <- df %>%
     filter(timestep %in% routine_visits_timesteps) %>%
     merge(time_eq) %>% select(-timestep) %>% rename(timestep = timestep_agg)
-  
+
+  # Censor each individual after their first detection at an ACD visit (optional).
+  # Applied here so "detected" means detected at a visit, not at any true infection timestep.
+  if (censor_after_detection) {
+    df <- .apply_detection_censoring(df)
+  }
+
   # Because this is incidence calculation, we want to estimate incidence over period of time.
   
   # Define how many periods we will have considering length of followup_period.
