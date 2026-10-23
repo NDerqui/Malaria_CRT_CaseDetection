@@ -151,7 +151,7 @@ verbose_protocol <- list(
 
 intervention_protocol <- list(
   key_intervention_time = key_intervention_time,
-  intervention_bed_coverage = 0.8,  
+  # intervention_bed_coverage = 0.8,  
   intervention_bed_dn0 = 0.4616,     
   intervention_bed_rn = 0.5319)
 
