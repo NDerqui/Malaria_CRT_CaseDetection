@@ -132,7 +132,9 @@ analyse_two_arm_trial <- function(trial_id,
               lower_95quant = mean(lower_95quant, na.rm = TRUE),
               upper_95quant = mean(upper_95quant, na.rm = TRUE),
               .groups = "drop")
-  
+
+  rm(estimates_all); gc()
+
   ## OUTCOMES (time to event)
 
   has_second_intervention <- !is.null(trial_second_intervention) && !is.na(trial_second_intervention)
@@ -174,6 +176,8 @@ analyse_two_arm_trial <- function(trial_id,
     ) %>%
       prepare_time_to_event_survival(time_inter = t2, sim_length = sim_length*year)
   } else NULL
+
+  rm(infections_control, infections_intervention); gc()
 
   # Windowed (landmark) hazard ratios: one per year window from trial start.
   # Uses tte_true_1 / tte_acd_1 (full follow-up from first intervention).

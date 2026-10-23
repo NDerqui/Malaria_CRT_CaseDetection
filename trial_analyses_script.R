@@ -63,7 +63,7 @@ make_output_dirs()
 # Define a PCD cross-sectional survey and an ACD routine visit protocol
 
 survey_protocol <- list(
-  cross_surveys_in_years = seq(0.5, 6, 0.5)
+  cross_surveys_in_years = seq(0.5, 5, 0.5)
 )
 
 acd_protocol <- list(
@@ -94,6 +94,10 @@ save_two_arm_trial(
   trial_results = trial_results,
   trial_slug = trial_slug
 )
+
+# TTE data is now on disk — free it before the (memory-light) plotting step.
+trial_results[c("tte_true_1", "tte_true_2", "tte_acd_1", "tte_acd_2")] <- NULL
+gc()
 
 # Save all plots to corresponding folder/file.
 
