@@ -53,7 +53,7 @@ boolean_vaccine <- FALSE
 
 # Set length of sim
 
-sim_length <- 5
+sim_length <- 6
 
 # Set the intervention and when do our interventions start.
 # We can do two interventions, timing of second calculated with respect to first.
@@ -94,7 +94,7 @@ n_power <- 10
 
 # Add a "trial name" to keep track of results
 
-trial_name <- "Test of new treatment"
+trial_name <- "Test of low percent MDA"
 
 
 #### sim pars ####
