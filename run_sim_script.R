@@ -157,8 +157,12 @@ intervention_protocol <- list(
 
 analysis_populations <- tibble::tribble(
   ~analysis_population, ~age_min, ~age_max,  ~all_cleared,
-  "age_0_5",                    0,        5,         TRUE,  
-  "age_5_15",                   5,       15,         TRUE,
+  "age_0_5_MDA",                0,        5,         TRUE,  
+  "age_5_15_MDA",               5,       15,         TRUE,
+  "age_0_5_NonMDA1",            0,        5,        FALSE,  
+  "age_5_15_NonMDA1",           5,       15,        FALSE,
+  "age_0_5_NonMDA2",            0,        5,        FALSE,  
+  "age_5_15_NonMDA2",           5,       15,        FALSE,
   "age_15_plus",               15,      100,        FALSE,
   "all_ages",                   0,      100,        FALSE
 )
