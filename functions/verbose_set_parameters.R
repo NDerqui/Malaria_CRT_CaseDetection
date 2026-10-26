@@ -28,6 +28,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
                               # At the trial start, treat 100% to clear infection
                               mass_clearance,
                               mass_clearance_timestep = NULL, # Set to null in case above is FALSE
+                              mass_clearance_coverage = 0.05, # Set to very small % (cohort followed is small compared to total pop)
                               mass_clearance_min_age = 0,   # Set to treat everyone in case
                               mass_clearance_max_age = 150, # Set to treat everyone in case
                               ## Bednet pars (coverage, etc. default)
@@ -90,7 +91,7 @@ set_baseline_pars <- function(sim_length, init_EIR, human_population,
       # Specify a coverage of 100% for out MDA and age ranges that guarantee everyone is cleared
       set_mda(drug = 1,
               timesteps = mass_clearance_timestep*year,
-              coverages = 0.6,
+              coverages = mass_clearance_coverage,
               min_ages = rep(mass_clearance_min_age * year, length(mass_clearance_timestep)),
               max_ages = rep(mass_clearance_max_age * year, length(mass_clearance_timestep))) %>% 
       set_equilibrium(init_EIR = init_EIR)
