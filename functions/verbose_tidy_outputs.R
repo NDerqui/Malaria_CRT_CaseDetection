@@ -10,7 +10,7 @@
 # Finally, detect infection states to run all verbose-functions in one step.
 
 run_and_clean_verbose <- function(## Shared verbose sim parameters
-                                  verbose_protocol,
+                                  shared_protocol,
                                   ## Key intervention parameters
                                   key_intervention, intervention_protocol = NULL,
                                   ## Parameters to follow only analysis cohort
@@ -37,7 +37,7 @@ run_and_clean_verbose <- function(## Shared verbose sim parameters
   
   # Run and extract state
   
-  sim_args <- c(verbose_protocol,
+  sim_args <- c(shared_protocol,
                 list(key_intervention = key_intervention))
   
   if (!is.null(intervention_protocol)) {
@@ -82,7 +82,7 @@ run_and_clean_verbose <- function(## Shared verbose sim parameters
   analyses_cohort <- df %>%
     get_birth_death() %>%
     get_age_cohort(age_snapshot = df_age,
-                   snapshot_time = verbose_protocol$snapshot_time)
+                   snapshot_time = shared_protocol$snapshot_time)
   
   analyses_cohort <- do.call(
     get_enrol_samples,
@@ -115,7 +115,7 @@ run_and_clean_verbose <- function(## Shared verbose sim parameters
 
 sim_two_arm_trial <- function(trial_id, n_power, n_clusters,
                               ## Verbose sim parameters
-                              verbose_protocol,
+                              shared_protocol,
                               ## Key intervention parameters
                               key_intervention, intervention_protocol,
                               ## Parameters to follow only analysis cohort
@@ -160,7 +160,7 @@ sim_two_arm_trial <- function(trial_id, n_power, n_clusters,
         
         run_and_clean_verbose(
           # Same verbose protocol for both arms
-          verbose_protocol = verbose_protocol,
+          shared_protocol = shared_protocol,
           # Assign intervention parameters only to the intervention arm
           key_intervention = if (intervention_arm) {
             key_intervention

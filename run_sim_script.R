@@ -133,10 +133,10 @@ baseline_parameters <- set_baseline_pars(sim_length = sim_length,
 # Put the options for the verbose run,
 # the intervention and the analysis cohort in lists to pass to the wrapper function.
 # Note the intervention protocol is only passed to the intervention arm,
-# so any modification to default pars for baseline conditions need to be passed in verbose_protocol.
+# so any modification to default pars for baseline conditions need to be passed in shared_protocol.
 # This includes the population(s) age boundary(ies) for the follow-up cohort.
 
-verbose_protocol <- list(
+shared_protocol <- list(
   simparams = baseline_parameters,
   sim_length = sim_length,
   snapshot_time = snapshot_time,
@@ -239,7 +239,7 @@ tryCatch(
       trial_id = trial_id,
       n_power = n_power,
       n_clusters = n_clusters,
-      verbose_protocol = verbose_protocol,
+      shared_protocol = shared_protocol,
       key_intervention = key_intervention,
       intervention_protocol = intervention_protocol,
       analysis_cohort_protocol = analysis_cohort_protocol)
